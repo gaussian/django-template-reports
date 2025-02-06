@@ -3,12 +3,16 @@ import re
 
 def resolve_tag_expression(expr, context):
     """
-    Resolve a template tag expression (e.g. "user.email" or "program.users[is_active==True].email")
-    against a context dictionary.
+    Given an expression string (e.g., "user.email", "program.users[is_active==True].email",
+    or even "user__relations__subjects[user__relation__type=='m'].email"),
+    resolve it against the provided context dictionary.
+
+    Returns the final value (which might be a list, a string, or any value).
     """
     segments = split_expression(expr)
     if not segments:
         return ""
+    # The first segment should be a key in the context:
     current = context.get(segments[0])
     if current is None:
         return ""
@@ -21,34 +25,43 @@ def resolve_tag_expression(expr, context):
 
 def split_expression(expr):
     """
-    Split the expression into segments by periods but ignore dots inside square brackets.
-    For example: "program.users[is_active==True].email" becomes:
-      ["program", "users[is_active==True]", "email"]
+    Split the expression into segments by periods, but ignore periods inside square brackets.
+    For example, the expression
+       program.users[is_active==True].email
+    will be split into:
+       ['program', 'users[is_active==True]', 'email']
     """
     return re.split(r"\.(?![^\[]*\])", expr)
 
 
 def resolve_segment(current, segment):
     """
-    Resolve a segment that might include an optional filter.
-    For example: "users[is_active==True]" will perform a lookup on "users" then filter.
+    Resolve one segment of the expression. A segment is of the form:
+      attribute_name[optional_filter]
+    where attribute_name can contain double-underscores (for nested attribute lookup).
+    The optional filter (inside [ and ]) is a comma‑separated list of conditions.
     """
+    # The regular expression matches an attribute (letters, digits, underscore, and optional __ stuff)
+    # and an optional filter part in brackets.
     m = re.match(r"(\w+(?:__\w+)*)(\[(.*?)\])?$", segment)
     if not m:
         return None
-    attr_name = m.group(1)
-    filter_expr = m.group(3)
+    attr_name = m.group(1)  # e.g., "users" or "user__relations__subjects"
+    filter_expr = m.group(3)  # e.g., "is_active==True" or "user__relation__type=='m'"
 
-    # Apply the attribute lookup. If current is a list, map the lookup.
+    # Retrieve the attribute from current.
+    # If current is a list, then apply the lookup to each element.
     if isinstance(current, (list, tuple)):
         values = [get_nested_attr(item, attr_name) for item in current]
     else:
         values = get_nested_attr(current, attr_name)
 
+    # If a filter is specified, then filter the resulting collection.
     if filter_expr:
-        # Ensure we have a list for filtering.
+        # Make sure we’re dealing with a list.
         if not isinstance(values, list):
             values = [values]
+        # Conditions are separated by commas.
         conditions = [cond.strip() for cond in filter_expr.split(",")]
         values = [
             item
@@ -60,9 +73,10 @@ def resolve_segment(current, segment):
 
 def get_nested_attr(obj, attr):
     """
-    Retrieve an attribute via a dot (or double-underscore) chain.
-    For example, "profile__phone" is equivalent to: getattr(obj, 'profile').phone
-    Works for both objects and dictionaries.
+    Retrieve an attribute from obj. If attr contains double underscores,
+    treat that as a chain of lookups.
+    For example, if attr is "cohort__name", this is equivalent to: getattr(obj, "cohort").name
+    Works on both objects and dictionaries.
     """
     parts = attr.split("__")
     for part in parts:
@@ -82,8 +96,12 @@ def get_nested_attr(obj, attr):
 
 def evaluate_condition(item, condition):
     """
-    Evaluate a condition of the form attribute==value (or attribute=value) on the item.
-    Supports double-underscore chains in the attribute.
+    Evaluate a condition string on the given item.
+    The condition should be in the form:
+         attribute==value   or   attribute=value
+    Where attribute can be a chain with double underscores.
+    For example: "is_active==True" or "user__relation__type=='m'"
+    Only equality is supported in this simple example.
     """
     m = re.match(r"([\w__]+)\s*(==|=)\s*(.+)", condition)
     if not m:
@@ -96,7 +114,8 @@ def evaluate_condition(item, condition):
 
 def parse_value(val_str):
     """
-    Convert a string representation into a Python value.
+    Parse a string value into a Python object.
+    Tries booleans, integers, floats; strips quotes from strings.
     """
     val_str = val_str.strip()
     if val_str.lower() == "true":
@@ -111,6 +130,7 @@ def parse_value(val_str):
         return float(val_str)
     except ValueError:
         pass
+    # Remove quotes if present.
     if (val_str.startswith('"') and val_str.endswith('"')) or (
         val_str.startswith("'") and val_str.endswith("'")
     ):
