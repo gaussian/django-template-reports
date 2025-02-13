@@ -17,11 +17,14 @@ class ReportDefinition(models.Model):
 
 class ReportRun(models.Model):
     report_definition = models.ForeignKey(ReportDefinition, on_delete=models.CASCADE)
-    # Instead of a generic foreign key, we store the run’s context and any other metadata in a JSON field.
-    run_data = models.JSONField()
-    # The generated PPTX file.
+
+    # We store the run’s context and any other metadata in a JSON field.
+    data = models.JSONField()
+
+    # The generated PPTX file
     generated_report = models.FileField(upload_to="generated_reports/")
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.report_definition.name} run at {self.created_at}"
+        return f"{self.report_definition.name} run at {self.created}"
