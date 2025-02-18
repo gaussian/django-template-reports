@@ -6,21 +6,17 @@ def merge_runs_in_paragraph(
     paragraph, context, errors, request_user, check_permissions, mode="normal"
 ):
     """
-    Merge consecutive runs in a paragraph that form a single template tag.
+    Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
+    We then call process_text in the specified mode.
 
-    If a run contains a starting '{{' without a closing '}}', merge subsequent runs until the closing '}}' is found.
-    If no closing is found, raise UnterminatedTagException.
+    Steps:
+      1) If a run has "{{" but not "}}", we keep concatenating subsequent runs
+         until we see one containing "}}" or we run out of runs.
+      2) Once we unify them into one string, we call process_text(..., mode=mode)
+         which handles pure vs. mixed text, date formatting, list joining, etc.
+      3) We replace the text in the first run with the processed result and delete the subsequent runs.
 
-    Process the merged text using process_text with the given mode.
-    Delete the merged runs so that only the first run remains.
-
-    Args:
-      paragraph: The paragraph object from a text frame.
-      context (dict): The context for template resolution.
-      errors (list): List to collect error messages.
-      request_user: The user object for permission checking.
-      check_permissions (bool): Whether to enforce permission checking.
-      mode (str): "normal" or "table".
+    If no "}}" is found for a run that starts with "{{", raises UnterminatedTagException.
     """
     runs = paragraph.runs
     i = 0
@@ -40,27 +36,35 @@ def merge_runs_in_paragraph(
                 raise UnterminatedTagException(
                     f"Unterminated tag starting in run {i}: {current_text}"
                 )
-            processed_text = process_text(
+            # Now we have a single string with the entire placeholder. We process it.
+            processed = process_text(
                 merged_text,
-                context=context,
+                context,
                 errors=errors,
                 request_user=request_user,
                 check_permissions=check_permissions,
                 mode=mode,
             )
-            runs[i].text = processed_text
-            # Remove runs from i+1 through j.
+            runs[i].text = processed if isinstance(processed, str) else str(processed)
+            # Remove the merged runs from i+1 up to j inclusive.
             for k in range(i + 1, j + 1):
                 paragraph._p.remove(runs[k]._r)
-            runs = paragraph.runs  # refresh the list
+            runs = paragraph.runs  # refresh
         else:
-            processed_text = process_text(
+            # If the run already has both {{ and }} or none at all,
+            # we just call process_text.
+            processed = process_text(
                 current_text,
-                context=context,
+                context,
                 errors=errors,
                 request_user=request_user,
                 check_permissions=check_permissions,
                 mode=mode,
             )
-            runs[i].text = processed_text
+            if isinstance(processed, str):
+                runs[i].text = processed
+            else:
+                # In normal mode, process_text might return a list if it's pure
+                # but we are in a single run, so let's join it anyway.
+                runs[i].text = ", ".join(str(item) for item in processed)
         i += 1

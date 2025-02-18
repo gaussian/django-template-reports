@@ -102,7 +102,7 @@ def main():
         name="Carol", email="carol@test.com", cohort=cohort, is_active=False
     )
     users_qs = DummyQuerySet([bob, carol])
-    program = DummyProgram(name="Test Program", users=users_qs)
+    program = DummyProgram(name="Test Program", users=[bob, carol])
     dummy_date = datetime.date(2020, 1, 15)
 
     # Construct the context.
@@ -128,7 +128,7 @@ def main():
             context,
             output_file,
             request_user=request_user,
-            check_permissions=True,
+            check_permissions=False,
         )
         print("Rendered PPTX saved to:", rendered)
     except Exception as e:

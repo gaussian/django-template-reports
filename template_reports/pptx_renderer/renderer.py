@@ -15,12 +15,20 @@ def render_pptx(
     """
     Render the PPTX template at template_path using the provided context and save to output_path.
 
-    - Non-table text boxes are processed in "normal" mode (which joins list values using a delimiter).
-    - Table cells are processed in "table" mode; if a placeholder returns a list, the cell is expanded into multiple rows.
+    1) For non-table shapes (text frames):
+       - We iterate over each paragraph and merge runs if a single placeholder is split across them,
+         calling merge_runs_in_paragraph(...) in "normal" mode.
+       - After merging, each run's text is replaced by process_text(..., mode="normal").
+
+    2) For table shapes:
+       - We iterate over each cell. If the entire cell is exactly a single placeholder, we call
+         process_table_cell(...) in "table" mode. That function handles pure placeholders vs. mixed text.
+       - If not a pure placeholder, we perform normal merges on each paragraph (so that placeholders
+         split across runs are unified) and then call "normal" mode on the resulting text.
 
     After processing, if any errors were recorded:
-      - If any error indicates a permission problem, a PermissionDeniedException is raised.
-      - Otherwise, an UnresolvedTagError is raised.
+      - If any contain "Permission denied", raise a PermissionDeniedException.
+      - Otherwise, raise an UnresolvedTagError.
 
     Args:
       template_path (str): Path to the input PPTX template.
@@ -37,34 +45,39 @@ def render_pptx(
     """
     prs = Presentation(template_path)
     errors = []
+
     for slide in prs.slides:
         for shape in slide.shapes:
+            # 1) Process text frames (non-table).
             if hasattr(shape, "text_frame"):
                 for paragraph in shape.text_frame.paragraphs:
+                    # Merge any placeholders that are split across multiple runs.
                     merge_runs_in_paragraph(
                         paragraph,
                         context,
                         errors,
                         request_user,
                         check_permissions,
-                        mode="normal",
+                        mode="normal",  # for text frames
                     )
-            if hasattr(shape, "has_table") and shape.has_table:
+            # 2) Process tables.
+            if getattr(shape, "has_table", False) and shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:
                         process_table_cell(
                             cell, context, errors, request_user, check_permissions
                         )
+
     if errors:
         perm_errors = [e for e in errors if "Permission denied" in e]
         if perm_errors:
             raise PermissionDeniedException(perm_errors)
         else:
             print(
-                "The following template tags could not be resolved or failed permission checks:"
+                "The following template tags could not be resolved or permission checks failed:"
             )
             for tag in set(errors):
-                print(" -", tag)
+                print(f" - {tag}")
             raise UnresolvedTagError(
                 "One or more template tags could not be resolved; output file not created."
             )
