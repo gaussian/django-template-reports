@@ -5,9 +5,11 @@ from ..templating import process_text
 
 def process_table_cell(cell, context, errors, request_user, check_permissions):
     """
-    Process a table cell. If the cell text is exactly a placeholder, process it in table mode.
-    If the result is a list, then expand the cell into multiple rows.
-    Otherwise, process each paragraph normally in normal mode.
+    Process a table cell.
+
+    If the cell's entire text is exactly a placeholder (matches "{{ ... }}"), process it in "table" mode.
+    If the result is a list, expand the cell into multiple rows.
+    Otherwise, process each paragraph normally in "normal" mode.
     """
     placeholder = cell.text.strip()
     if re.fullmatch(r"\{\{.*\}\}", placeholder):

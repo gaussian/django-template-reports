@@ -67,10 +67,9 @@ class DummyProgram:
         return self.name
 
 
-# Dummy user for permission checking.
 class DummyRequestUser:
     def has_perm(self, perm, obj):
-        # For testing, let's say permission is granted only if the object's name does not contain "Carol"
+        # For testing, deny permission if the object's name contains "Carol".
         if hasattr(obj, "name") and "Carol" in obj.name:
             return False
         return True

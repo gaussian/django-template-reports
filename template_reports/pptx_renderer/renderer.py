@@ -13,18 +13,30 @@ def render_pptx(
     template_path, context, output_path, request_user=None, check_permissions=True
 ):
     """
-    Open the PPTX template at template_path, process all text placeholders using our templating logic,
-    and save the rendered presentation to output_path.
+    Render the PPTX template at template_path using the provided context and save to output_path.
 
-    In non-table text boxes, process in "normal" mode.
-    In table cells, process in "table" mode.
+    - Non-table text boxes are processed in "normal" mode (which joins list values using a delimiter).
+    - Table cells are processed in "table" mode; if a placeholder returns a list, the cell is expanded into multiple rows.
 
-    After processing, if any errors were recorded, raise a PermissionDeniedException if any
-    error indicates a permission problem, or otherwise raise an UnresolvedTagError.
+    After processing, if any errors were recorded:
+      - If any error indicates a permission problem, a PermissionDeniedException is raised.
+      - Otherwise, an UnresolvedTagError is raised.
+
+    Args:
+      template_path (str): Path to the input PPTX template.
+      context (dict): The template context.
+      output_path (str): Path to save the rendered PPTX.
+      request_user: The user object for permission checking.
+      check_permissions (bool): Whether to enforce permission checks.
+
+    Returns:
+      The output_path if rendering succeeds.
+
+    Raises:
+      PermissionDeniedException, UnresolvedTagError, UnterminatedTagException.
     """
     prs = Presentation(template_path)
     errors = []
-    # Process text frames (normal mode).
     for slide in prs.slides:
         for shape in slide.shapes:
             if hasattr(shape, "text_frame"):
@@ -37,7 +49,6 @@ def render_pptx(
                         check_permissions,
                         mode="normal",
                     )
-            # Process tables.
             if hasattr(shape, "has_table") and shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:

@@ -6,11 +6,21 @@ def merge_runs_in_paragraph(
     paragraph, context, errors, request_user, check_permissions, mode="normal"
 ):
     """
-    Iterate through the runs of a paragraph. If a run contains a starting '{{' without a closing '}}',
-    merge subsequent runs until the closing '}}' is found.
+    Merge consecutive runs in a paragraph that form a single template tag.
+
+    If a run contains a starting '{{' without a closing '}}', merge subsequent runs until the closing '}}' is found.
     If no closing is found, raise UnterminatedTagException.
+
     Process the merged text using process_text with the given mode.
-    Remove the merged runs (i.e. delete them) so that only the first run remains.
+    Delete the merged runs so that only the first run remains.
+
+    Args:
+      paragraph: The paragraph object from a text frame.
+      context (dict): The context for template resolution.
+      errors (list): List to collect error messages.
+      request_user: The user object for permission checking.
+      check_permissions (bool): Whether to enforce permission checking.
+      mode (str): "normal" or "table".
     """
     runs = paragraph.runs
     i = 0
