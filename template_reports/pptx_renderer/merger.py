@@ -6,12 +6,11 @@ def merge_runs_in_paragraph(
     paragraph, context, errors, request_user, check_permissions, mode="normal"
 ):
     """
-    Iterate through runs in a paragraph. If a run contains a starting '{{' without a closing '}}',
-    merge subsequent runs into that run until the closing '}}' is found.
-
-    Raise UnterminatedTagException if no closing '}}' is found in the paragraph.
-    After merging, process the merged text using process_text with the given mode.
-    Subsequent runs that have been merged are removed.
+    Iterate through the runs of a paragraph. If a run contains a starting '{{' without a closing '}}',
+    merge subsequent runs until the closing '}}' is found.
+    If no closing is found, raise UnterminatedTagException.
+    Process the merged text using process_text with the given mode.
+    Remove the merged runs (i.e. delete them) so that only the first run remains.
     """
     runs = paragraph.runs
     i = 0
@@ -40,10 +39,10 @@ def merge_runs_in_paragraph(
                 mode=mode,
             )
             runs[i].text = processed_text
-            # Remove the merged runs.
+            # Remove runs from i+1 through j.
             for k in range(i + 1, j + 1):
                 paragraph._p.remove(runs[k]._r)
-            runs = paragraph.runs
+            runs = paragraph.runs  # refresh the list
         else:
             processed_text = process_text(
                 current_text,

@@ -38,14 +38,13 @@ class DummyQuerySet:
         for item in self.items:
             match = True
             for key, val in kwargs.items():
-                # Support nested lookups via __.
                 attrs = key.split("__")
                 current = item
                 for attr in attrs:
                     current = getattr(current, attr, None)
                     if current is None:
                         break
-                if current != val:
+                if str(current) != str(val):
                     match = False
                     break
             if match:
@@ -60,11 +59,21 @@ class DummyQuerySet:
 
 
 class DummyProgram:
-    def __init__(self, users):
+    def __init__(self, name, users):
+        self.name = name
         self.users = users  # This will be a DummyQuerySet
 
     def __str__(self):
-        return ", ".join(str(u) for u in self.users)
+        return self.name
+
+
+# Dummy user for permission checking.
+class DummyRequestUser:
+    def has_perm(self, perm, obj):
+        # For testing, let's say permission is granted only if the object's name does not contain "Carol"
+        if hasattr(obj, "name") and "Carol" in obj.name:
+            return False
+        return True
 
 
 def main():
@@ -93,12 +102,11 @@ def main():
     carol = DummyUser(
         name="Carol", email="carol@test.com", cohort=cohort, is_active=False
     )
-    # Simulate a Django QuerySet for program.users.
     users_qs = DummyQuerySet([bob, carol])
-    program = DummyProgram(users=users_qs)
+    program = DummyProgram(name="Test Program", users=users_qs)
     dummy_date = datetime.date(2020, 1, 15)
 
-    # Construct the context dictionary.
+    # Construct the context.
     context = {
         "user": user,
         "program": program,
@@ -108,12 +116,20 @@ def main():
     print("Context:")
     print("  user:", user.name, user.email)
     print("  cohort:", cohort.name)
+    print("  program:", program.name)
     print("  program.users (dummy queryset):", users_qs)
     print("  date:", dummy_date)
 
+    # Create a dummy request user for permission checking.
+    request_user = DummyRequestUser()
+
     try:
         rendered = render_pptx(
-            input_file, context, output_file, request_user=user, check_permissions=False
+            input_file,
+            context,
+            output_file,
+            request_user=request_user,
+            check_permissions=True,
         )
         print("Rendered PPTX saved to:", rendered)
     except Exception as e:
