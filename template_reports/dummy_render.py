@@ -101,8 +101,9 @@ def main():
     carol = DummyUser(
         name="Carol", email="carol@test.com", cohort=cohort, is_active=False
     )
-    users_qs = DummyQuerySet([bob, carol])
-    program = DummyProgram(name="Test Program", users=[bob, carol])
+    todd = DummyUser(name="Todd", email="todd@test.com", cohort=cohort, is_active=True)
+    users_qs = DummyQuerySet([bob, carol, todd])
+    program = DummyProgram(name="Test Program", users=users_qs)
     dummy_date = datetime.date(2020, 1, 15)
 
     # Construct the context.
