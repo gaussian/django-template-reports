@@ -1,18 +1,46 @@
 import os
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.urls import path
 from django.shortcuts import render, redirect
-from django.contrib.contenttypes.models import ContentType
+import swapper
 
-from .models import ReportDefinition, ReportRun
 from .pptx_renderer import render_pptx
+
+ReportDefinition = swapper.load_model("template_reports", "ReportDefinition")
+ReportRun = swapper.load_model("template_reports", "ReportRun")
+
+
+class ReportDefinitionAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+    list_display = (
+        "name",
+        "created",
+        "modified",
+    )
+
+
+if not settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL:
+    admin.site.register(ReportDefinition, ReportDefinitionAdmin)
+
+
+class ReportRunAdmin(admin.ModelAdmin):
+    autocomplete_fields = ("report_definition",)
+
+
+if not settings.TEMPLATE_REPORTS_REPORTRUN_MODEL:
+    admin.site.register(ReportRun, ReportRunAdmin)
 
 
 class ReportGenerationForm(forms.Form):
     report_definition = forms.ModelChoiceField(
-        queryset=ReportDefinition.objects.all(), label="Report Template"
+        queryset=ReportRun.objects.all(),
+        label="Report Template",
+        widget=admin.widgets.AutocompleteSelect(
+            ReportRun._meta.get_field("report_definition"), admin.site
+        ),
     )
     context1 = forms.ChoiceField(label="Context 1", required=False)
     context2 = forms.ChoiceField(label="Context 2", required=False)
@@ -33,15 +61,14 @@ class ReportGenerationForm(forms.Form):
 
 
 class ReportGenerationAdminMixin(admin.ModelAdmin):
-    actions = ["generate_reports"]
+    actions = ("generate_reports",)
 
+    @admin.action(description="Generate reports for selected records")
     def generate_reports(self, request, queryset):
         selected = queryset.values_list("pk", flat=True)
         return HttpResponseRedirect(
             f"generate_reports/?ids={','.join(map(str, selected))}"
         )
-
-    generate_reports.short_description = "Generate reports for selected records"
 
     def get_urls(self):
         urls = super().get_urls()
@@ -54,6 +81,10 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    @staticmethod
+    def get_permissible_qs(model_class, request):
+        return model_class.objects.all()
+
     def generate_reports_view(self, request):
         ids = request.GET.get("ids")
         if not ids:
@@ -61,7 +92,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
             return redirect("..")
         id_list = ids.split(",")
         queryset = self.model.objects.filter(pk__in=id_list)
-        available_context_options = Team.objects.all()
+        available_context_options = self.get_permissible_qs(self.model, request)
         disable_context1 = queryset.exists()
 
         if request.method == "POST":
@@ -123,5 +154,8 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                 available_context_options=available_context_options,
                 disable_context1=disable_context1,
             )
-        context = {"form": form, "title": "Generate Reports"}
+        context = {
+            "form": form,
+            "title": "Generate Reports",
+        }
         return render(request, "admin/generate_reports.html", context)
