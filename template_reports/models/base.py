@@ -1,4 +1,3 @@
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 import swapper
 
@@ -9,16 +8,14 @@ class BaseReportDefinition(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
-    pptx_template = models.FileField(
-        upload_to="template_reports/templates/", storage=get_storage
-    )
+    file = models.FileField(upload_to="template_reports/templates/", storage=get_storage)
 
     # A set of allowed models (via ContentType) for which this report may run
-    allowed_models = models.ManyToManyField(ContentType, blank=True)
+    # allowed_models = models.ManyToManyField(ContentType, blank=True)
 
     # A JSON structure describing the required context keys
     # For example: {"record": "model", "teams": "queryset", "extra_info": "string"}
-    required_keys = models.JSONField(default=dict, blank=True)
+    # required_keys = models.JSONField(default=dict, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -41,7 +38,7 @@ class BaseReportRun(models.Model):
     data = models.JSONField()
 
     # The generated PPTX file
-    generated_report = models.FileField(
+    file = models.FileField(
         upload_to="template_reports/generated_reports/", storage=get_storage
     )
 
