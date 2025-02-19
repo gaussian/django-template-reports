@@ -1,7 +1,6 @@
 import re
 from copy import deepcopy
-from pptx.oxml.text import CT_TextBody
-from pptx.table import _Cell
+
 from .merger import merge_runs_in_paragraph
 from ..templating import process_text
 
@@ -35,13 +34,34 @@ def process_table_cell(cell, context, errors, request_user, check_permissions):
             )
 
 
+def clone_row_with_value(original_row, cell_index, new_text):
+    """
+    Helper function to create a new row from an existing row.
+
+    - Deep-copies the original row.
+    - Finds the cell at the given cell_index.
+    - Updates that cell's text with new_text.
+    - Returns the new row element.
+
+    Uses _Cell to update the text properly.
+    """
+
+    from pptx.table import _Cell
+
+    new_row = deepcopy(original_row)
+    new_row_cells = list(new_row)
+    if cell_index < len(new_row_cells):
+        target_cell_element = new_row_cells[cell_index]
+        new_cell = _Cell(target_cell_element, new_row)
+        new_cell.text = str(new_text)
+    return new_row
+
+
 def expand_table_cell_with_list(cell, items):
     """
     Expand the table by adding a new row for each additional item in `items`.
     The original cell is updated with the first item; for each subsequent item, a new row is cloned
     and the corresponding cell (at the same column index) is updated with the item's text.
-
-    Uses _Cell to update the text properly.
     """
     if not items:
         cell.text = ""
@@ -60,14 +80,5 @@ def expand_table_cell_with_list(cell, items):
 
     # For each additional item, clone the row.
     for item in items[1:]:
-        new_row_element = deepcopy(row_element)
-        # Get the target cell element in the cloned row.
-        new_row_cells = list(new_row_element)
-        if cell_index < len(new_row_cells):
-            target_cell_element = new_row_cells[cell_index]
-            # Create a new _Cell object for the target cell.
-            new_cell = _Cell(target_cell_element, new_row_element)
-            # Set its text.
-            new_cell.text = str(item)
-        # Append the new row to the table.
+        new_row_element = clone_row_with_value(row_element, cell_index, item)
         table_element.append(new_row_element)
