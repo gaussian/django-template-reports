@@ -1,12 +1,6 @@
 from pptx import Presentation
-from .merger import merge_runs_in_paragraph
+from .merger import process_paragraph
 from .expander import process_table_cell
-from .exceptions import (
-    UnterminatedTagException,
-    PermissionDeniedException,
-    UnresolvedTagError,
-)
-from ..templating import process_text
 
 
 def render_pptx(
@@ -52,10 +46,9 @@ def render_pptx(
             if hasattr(shape, "text_frame"):
                 for paragraph in shape.text_frame.paragraphs:
                     # Merge any placeholders that are split across multiple runs.
-                    merge_runs_in_paragraph(
+                    process_paragraph(
                         paragraph,
                         context,
-                        errors,
                         request_user,
                         check_permissions,
                         mode="normal",  # for text frames
@@ -69,17 +62,11 @@ def render_pptx(
                         )
 
     if errors:
-        perm_errors = [e for e in errors if "Permission denied" in e]
-        if perm_errors:
-            raise PermissionDeniedException(perm_errors)
-        else:
-            print(
-                "The following template tags could not be resolved or permission checks failed:"
-            )
-            for tag in set(errors):
-                print(f" - {tag}")
-            raise UnresolvedTagError(
-                "One or more template tags could not be resolved; output file not created."
-            )
+        print("Rendering aborted due to the following errors:")
+        for err in set(errors):
+            print(f" - {err}")
+        print("Output file not saved.")
+        return None
+
     prs.save(output_path)
     return output_path

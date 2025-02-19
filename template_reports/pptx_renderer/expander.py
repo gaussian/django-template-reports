@@ -1,7 +1,7 @@
 import re
 from copy import deepcopy
 
-from .merger import merge_runs_in_paragraph
+from .merger import process_paragraph
 from ..templating import process_text
 
 
@@ -29,7 +29,7 @@ def process_table_cell(cell, context, errors, request_user, check_permissions):
             cell.text = result
     else:
         for paragraph in cell.text_frame.paragraphs:
-            merge_runs_in_paragraph(
+            process_paragraph(
                 paragraph, context, errors, request_user, check_permissions, mode="normal"
             )
 

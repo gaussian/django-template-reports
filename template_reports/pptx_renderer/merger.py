@@ -2,9 +2,7 @@ from ..templating import process_text
 from .exceptions import UnterminatedTagException
 
 
-def merge_runs_in_paragraph(
-    paragraph, context, errors, request_user, check_permissions, mode="normal"
-):
+def process_paragraph(paragraph, context, request_user, check_permissions, mode="normal"):
     """
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     We then call process_text in the specified mode.
@@ -40,7 +38,6 @@ def merge_runs_in_paragraph(
             processed = process_text(
                 merged_text,
                 context,
-                errors=errors,
                 request_user=request_user,
                 check_permissions=check_permissions,
                 mode=mode,
@@ -56,7 +53,6 @@ def merge_runs_in_paragraph(
             processed = process_text(
                 current_text,
                 context,
-                errors=errors,
                 request_user=request_user,
                 check_permissions=check_permissions,
                 mode=mode,
