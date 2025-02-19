@@ -1,6 +1,6 @@
 from pptx import Presentation
-from .merger import process_paragraph
-from .expander import process_table_cell
+from .paragraphs import process_paragraph
+from .tables import process_table_cell
 
 
 def render_pptx(
@@ -11,7 +11,7 @@ def render_pptx(
 
     1) For non-table shapes (text frames):
        - We iterate over each paragraph and merge runs if a single placeholder is split across them,
-         calling merge_runs_in_paragraph(...) in "normal" mode.
+         calling process_paragraph(...) in "normal" mode.
        - After merging, each run's text is replaced by process_text(..., mode="normal").
 
     2) For table shapes:

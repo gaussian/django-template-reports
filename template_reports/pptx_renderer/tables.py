@@ -1,7 +1,7 @@
 import re
 from copy import deepcopy
 
-from .merger import process_paragraph
+from .paragraphs import process_paragraph
 from ..templating import process_text
 
 
