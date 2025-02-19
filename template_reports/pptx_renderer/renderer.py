@@ -3,9 +3,7 @@ from .paragraphs import process_paragraph
 from .tables import process_table_cell
 
 
-def render_pptx(
-    template_path, context, output_path, request_user=None, check_permissions=True
-):
+def render_pptx(template_path, context, output_path, perm_user):
     """
     Render the PPTX template at template_path using the provided context and save to output_path.
 
@@ -28,8 +26,7 @@ def render_pptx(
       template_path (str): Path to the input PPTX template.
       context (dict): The template context.
       output_path (str): Path to save the rendered PPTX.
-      request_user: The user object for permission checking.
-      check_permissions (bool): Whether to enforce permission checks.
+      perm_user: The user object for permission checking. No permissions checking if None
 
     Returns:
       The output_path if rendering succeeds.
@@ -49,17 +46,14 @@ def render_pptx(
                     process_paragraph(
                         paragraph,
                         context,
-                        request_user,
-                        check_permissions,
+                        perm_user=perm_user,
                         mode="normal",  # for text frames
                     )
             # 2) Process tables.
             if getattr(shape, "has_table", False) and shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:
-                        process_table_cell(
-                            cell, context, errors, request_user, check_permissions
-                        )
+                        process_table_cell(cell, context, errors, perm_user)
 
     if errors:
         print("Rendering aborted due to the following errors:")

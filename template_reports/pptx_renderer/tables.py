@@ -5,7 +5,7 @@ from .paragraphs import process_paragraph
 from ..templating import process_text
 
 
-def process_table_cell(cell, context, errors, request_user, check_permissions):
+def process_table_cell(cell, context, errors, perm_user=None):
     """
     Process the text in a table cell.
 
@@ -18,9 +18,7 @@ def process_table_cell(cell, context, errors, request_user, check_permissions):
         result = process_text(
             cell_text,
             context,
-            errors=errors,
-            request_user=request_user,
-            check_permissions=check_permissions,
+            perm_user=perm_user,
             mode="table",
         )
         if isinstance(result, list):
@@ -29,9 +27,7 @@ def process_table_cell(cell, context, errors, request_user, check_permissions):
             cell.text = result
     else:
         for paragraph in cell.text_frame.paragraphs:
-            process_paragraph(
-                paragraph, context, errors, request_user, check_permissions, mode="normal"
-            )
+            process_paragraph(paragraph, context, perm_user, mode="normal")
 
 
 def clone_row_with_value(original_row, cell_index, new_text):

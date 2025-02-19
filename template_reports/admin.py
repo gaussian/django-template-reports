@@ -101,7 +101,9 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
 
                     # Render the PPTX template.
                     rendered_file = render_pptx(
-                        report_def.pptx_template.path, context, output_path
+                        report_def.pptx_template.path,
+                        context,
+                        output_path,
                     )
 
                     # Capture the run data in JSON (for example, store context info).

@@ -2,7 +2,7 @@ from ..templating import process_text
 from .exceptions import UnterminatedTagException
 
 
-def process_paragraph(paragraph, context, request_user, check_permissions, mode="normal"):
+def process_paragraph(paragraph, context, perm_user, mode="normal"):
     """
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     We then call process_text in the specified mode.
@@ -38,8 +38,7 @@ def process_paragraph(paragraph, context, request_user, check_permissions, mode=
             processed = process_text(
                 merged_text,
                 context,
-                request_user=request_user,
-                check_permissions=check_permissions,
+                perm_user=perm_user,
                 mode=mode,
             )
             runs[i].text = processed if isinstance(processed, str) else str(processed)
@@ -53,8 +52,7 @@ def process_paragraph(paragraph, context, request_user, check_permissions, mode=
             processed = process_text(
                 current_text,
                 context,
-                request_user=request_user,
-                check_permissions=check_permissions,
+                perm_user=perm_user,
                 mode=mode,
             )
             if isinstance(processed, str):

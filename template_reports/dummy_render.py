@@ -128,8 +128,7 @@ def main():
             input_file,
             context,
             output_file,
-            request_user=request_user,
-            check_permissions=False,
+            perm_user=None,
         )
         print("Rendered PPTX saved to:", rendered)
     except Exception as e:
