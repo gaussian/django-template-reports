@@ -3,7 +3,7 @@ import re
 
 def resolve_tag_expression(expr, context):
     """
-    Given an expression string (e.g., "user.name", "program.users[is_active==True].email"),
+    Given an expression string (e.g., "user.name", "program.users[is_active=True].email"),
     resolve it against the provided context dictionary.
     Returns the final value (which might be a list, a string, or any value).
     """
@@ -24,8 +24,8 @@ def resolve_tag_expression(expr, context):
 def split_expression(expr):
     """
     Split the expression into segments by periods, but ignore periods inside square brackets.
-    For example: "program.users[is_active==True].email" becomes:
-       ['program', 'users[is_active==True]', 'email']
+    For example: "program.users[is_active=True].email" becomes:
+       ['program', 'users[is_active=True]', 'email']
     """
     return re.split(r"\.(?![^\[]*\])", expr)
 
