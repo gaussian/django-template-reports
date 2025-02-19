@@ -43,17 +43,27 @@ def render_pptx(template_path, context, output_path, perm_user):
             if hasattr(shape, "text_frame"):
                 for paragraph in shape.text_frame.paragraphs:
                     # Merge any placeholders that are split across multiple runs.
-                    process_paragraph(
-                        paragraph,
-                        context,
-                        perm_user=perm_user,
-                        mode="normal",  # for text frames
-                    )
+                    try:
+                        process_paragraph(
+                            paragraph,
+                            context,
+                            perm_user=perm_user,
+                            mode="normal",  # for text frames
+                        )
+                    except Exception as e:
+                        errors.append(f"Error in paragraph: {e}")
             # 2) Process tables.
             if getattr(shape, "has_table", False) and shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:
-                        process_table_cell(cell, context, errors, perm_user)
+                        try:
+                            process_table_cell(
+                                cell,
+                                context,
+                                perm_user,
+                            )
+                        except Exception as e:
+                            errors.append(f"Error in table cell: {e}")
 
     if errors:
         print("Rendering aborted due to the following errors:")
