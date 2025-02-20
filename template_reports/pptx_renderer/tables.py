@@ -1,6 +1,8 @@
 import re
 from copy import deepcopy
 
+from template_reports.templating.core import get_matching_tags
+
 from .paragraphs import process_paragraph
 from ..templating import process_text
 
@@ -9,12 +11,16 @@ def process_table_cell(cell, context, perm_user=None):
     """
     Process the text in a table cell.
 
-    If the cell's entire text is exactly one placeholder, process in "table" mode.
+    If the cell's text contains exactly one placeholder, process in "table" mode.
     If the result is a list, expand the table by adding new rows.
-    Otherwise, for mixed text, process each paragraph in "normal" mode.
+    Otherwise, process each paragraph in "normal" mode.
     """
     cell_text = cell.text.strip()
-    if re.fullmatch(r"\{\{.*\}\}", cell_text):
+
+    matches = get_matching_tags(cell_text)
+
+    # Process in "table" mode if exactly one tag is found.
+    if len(matches) == 1:
         result = process_text(
             cell_text,
             context,
@@ -25,9 +31,16 @@ def process_table_cell(cell, context, perm_user=None):
             expand_table_cell_with_list(cell, result)
         else:
             cell.text = result
+
+    # Otherwise, process each paragraph in "normal" mode.
     else:
         for paragraph in cell.text_frame.paragraphs:
-            process_paragraph(paragraph, context, perm_user, mode="normal")
+            process_paragraph(
+                paragraph,
+                context,
+                perm_user,
+                mode="normal",
+            )
 
 
 def clone_row_with_value(original_row, cell_index, new_text):
@@ -58,6 +71,8 @@ def expand_table_cell_with_list(cell, items):
     Expand the table by adding a new row for each additional item in `items`.
     The original cell is updated with the first item; for each subsequent item, a new row is cloned
     and the corresponding cell (at the same column index) is updated with the item's text.
+
+    If the cell's underlying XML does not have a parent (i.e. row or table not found), simply update the cell.
     """
     if not items:
         cell.text = ""
@@ -66,9 +81,15 @@ def expand_table_cell_with_list(cell, items):
     # Set first item in original cell.
     cell.text = str(items[0])
 
-    # Get the row element (<a:tr>) and table element (<a:tbl>) from the cell's XML.
+    # Attempt to get the row element (<a:tr>) from the cell's XML.
     row_element = cell._tc.getparent()
+    if row_element is None:
+        # Fallback: if row element is not available, do not expand.
+        return
     table_element = row_element.getparent()
+    if table_element is None:
+        # Fallback: if table element is not available, do not expand.
+        return
 
     # Determine the cell's index in the row.
     row_cells = list(row_element)
