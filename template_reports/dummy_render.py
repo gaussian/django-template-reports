@@ -1,7 +1,8 @@
 import sys
 import argparse
 import datetime
-from template_reports.pptx_renderer.renderer import render_pptx
+
+from template_reports.pptx_renderer import render_pptx
 
 
 # Dummy context objects for testing.

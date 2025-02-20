@@ -8,8 +8,6 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 import swapper
 
-from .pptx_renderer import render_pptx
-
 ReportDefinition = swapper.load_model("template_reports", "ReportDefinition")
 ReportRun = swapper.load_model("template_reports", "ReportRun")
 

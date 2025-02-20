@@ -1,10 +1,9 @@
 import re
 from copy import deepcopy
 
-from template_reports.templating.core import get_matching_tags
+from template_reports.templating import process_text, get_matching_tags
 
 from .paragraphs import process_paragraph
-from ..templating import process_text
 
 
 def process_table_cell(cell, context, perm_user=None):
