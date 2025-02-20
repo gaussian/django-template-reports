@@ -13,9 +13,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "Django>=5,<6",
+  "swapper>=1,<2",
   "python-pptx>=1,<2",
 ]
 
 [project.urls]
 Homepage = "https://github.com/gaussian/django-template-reports"
 Issues = "https://github.com/gaussian/django-template-reports/issues"
+
+[tool.black]
+line-length = 90
+extend-exclude = '''
+/migrations/
+'''
+force-exclude = '''
+/migrations/
+'''
+
+[tool.isort]
+profile = "black"
