@@ -1,5 +1,13 @@
+import datetime
+from io import BytesIO
+
+from django.core.files.base import ContentFile
 from django.db import models
+from django.db.models import Q
 import swapper
+
+from template_reports.pptx_renderer.context_extractor import extract_context_keys
+from template_reports.pptx_renderer.renderer import render_pptx
 
 from .utils import get_storage
 
@@ -17,6 +25,10 @@ class BaseReportDefinition(models.Model):
     # For example: {"record": "model", "teams": "queryset", "extra_info": "string"}
     # required_keys = models.JSONField(default=dict, blank=True)
 
+    config = models.JSONField(
+        default=dict, blank=True, help_text="Configuration JSON, including allowed models"
+    )
+
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -25,6 +37,76 @@ class BaseReportDefinition(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def filter_for_allowed_models(cls, model):
+        """
+        Return a queryset of ReportDefinitions that are allowed to run for the given model.
+        If no model is provided, return all ReportDefinitions.
+        """
+        if model:
+            full_model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            return cls.objects.filter(
+                Q(config__allowed_models__contains=[full_model_name])
+                | Q(config__allowed_models__isnull=True)
+            )
+        return cls.objects.all()
+
+    def get_file_stream(self):
+        self.file.seek(0)
+        file_data = self.file.read()
+        return BytesIO(file_data)
+
+    def extract_context_requirements(self):
+        """
+        Analyze the template file and extract the context keys required to render it.
+        Return a dict with:
+        - simple_fields: sorted list of unique simple keys
+        - object_fields: sorted list of unique object keys
+        """
+        file_stream = self.get_file_stream()
+        return extract_context_keys(file_stream)
+
+    def run_report(self, context, perm_user):
+        """
+        Run the report with the provided context.
+        Save the generated report file as ReportRun.
+        """
+
+        # Get the file as a usable stream
+        file_stream = self.get_file_stream()
+
+        # Prepare an output stream to save to
+        output = BytesIO()
+
+        # Render the file
+        _, errors = render_pptx(
+            template=file_stream,
+            output=output,
+            context=context,
+            perm_user=perm_user,
+        )
+
+        # Errors
+        if errors:
+            return errors
+
+        # Create a Django ContentFile from the bytes
+        # (create a timestamp string)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"report-{timestamp}.pptx"
+        output_content = ContentFile(output.getvalue(), name=filename)
+
+        # Save the generated report
+        ReportRun = swapper.load_model("template_reports", "ReportRun")
+        ReportRun.objects.create(
+            report_definition=self,
+            data={"context": {k: str(v) for k, v in context.items()}},
+            file=output_content,
+        )
+
+        # Success
+        return None
 
 
 class BaseReportRun(models.Model):

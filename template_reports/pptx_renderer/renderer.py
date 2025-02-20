@@ -3,38 +3,18 @@ from .paragraphs import process_paragraph
 from .tables import process_table_cell
 
 
-def render_pptx(template_path, context, output_path, perm_user):
+def render_pptx(template, context, output, perm_user):
     """
-    Render the PPTX template at template_path using the provided context and save to output_path.
-
-    1) For non-table shapes (text frames):
-       - We iterate over each paragraph and merge runs if a single placeholder is split across them,
-         calling process_paragraph(...) in "normal" mode.
-       - After merging, each run's text is replaced by process_text(..., mode="normal").
-
-    2) For table shapes:
-       - We iterate over each cell. If the entire cell is exactly a single placeholder, we call
-         process_table_cell(...) in "table" mode. That function handles pure placeholders vs. mixed text.
-       - If not a pure placeholder, we perform normal merges on each paragraph (so that placeholders
-         split across runs are unified) and then call "normal" mode on the resulting text.
-
-    After processing, if any errors were recorded:
-      - If any contain "Permission denied", raise a PermissionDeniedException.
-      - Otherwise, raise an UnresolvedTagError.
-
-    Args:
-      template_path (str): Path to the input PPTX template.
-      context (dict): The template context.
-      output_path (str): Path to save the rendered PPTX.
-      perm_user: The user object for permission checking. No permissions checking if None
-
-    Returns:
-      The output_path if rendering succeeds.
-
-    Raises:
-      PermissionDeniedException, UnresolvedTagError, UnterminatedTagException.
+    Render the PPTX template (a path string or a file-like object) using the provided context and save to output.
+    'output' can be a path string or a file-like object. If it's a file-like object, it will be rewound after saving.
     """
-    prs = Presentation(template_path)
+    # Support template as a file path or file-like object.
+    if isinstance(template, str):
+        prs = Presentation(template)
+    else:
+        template.seek(0)
+        prs = Presentation(template)
+
     errors = []
 
     for slide in prs.slides:
@@ -70,7 +50,13 @@ def render_pptx(template_path, context, output_path, perm_user):
         for err in set(errors):
             print(f" - {err}")
         print("Output file not saved.")
-        return None
+        return None, errors
 
-    prs.save(output_path)
-    return output_path
+    # Save to output (file path or file-like object)
+    if isinstance(output, str):
+        prs.save(output)
+    else:
+        prs.save(output)
+        output.seek(0)
+
+    return output, None

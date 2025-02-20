@@ -1,10 +1,11 @@
-import os
+from urllib.parse import urlencode
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
-from django.urls import path
 from django.shortcuts import render, redirect
+from django.urls import path, reverse
+from django.utils.html import format_html
 import swapper
 
 from .pptx_renderer import render_pptx
@@ -13,7 +14,17 @@ ReportDefinition = swapper.load_model("template_reports", "ReportDefinition")
 ReportRun = swapper.load_model("template_reports", "ReportRun")
 
 
-class ReportDefinitionAdmin(admin.ModelAdmin):
+class AdminWithFileUrl(admin.ModelAdmin):
+    @admin.display(description="File link")
+    def file_link(self, obj):
+        return format_html(
+            "<a href=' {url}' target='_blank'>{text}</a>",  # SPACE IS NEEDED!
+            url=obj.file.url,
+            text="Link",
+        )
+
+
+class ReportDefinitionAdmin(AdminWithFileUrl):
     search_fields = ("name",)
     list_display = (
         "name",
@@ -26,136 +37,211 @@ if not settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL:
     admin.site.register(ReportDefinition, ReportDefinitionAdmin)
 
 
-class ReportRunAdmin(admin.ModelAdmin):
+class ReportRunAdmin(AdminWithFileUrl):
     autocomplete_fields = ("report_definition",)
+
+    list_display = (
+        "created",
+        "report_definition",
+        "file_link",
+        "is_active",
+    )
+
+    ordering = ("-created",)
 
 
 if not settings.TEMPLATE_REPORTS_REPORTRUN_MODEL:
     admin.site.register(ReportRun, ReportRunAdmin)
 
 
-class ReportGenerationForm(forms.Form):
+class ChooseReportDefinitionForm(forms.Form):
     report_definition = forms.ModelChoiceField(
-        queryset=ReportRun.objects.all(),
+        queryset=ReportDefinition.objects.all(),
         label="Report Template",
-        widget=admin.widgets.AutocompleteSelect(
-            ReportRun._meta.get_field("report_definition"), admin.site
-        ),
+        widget=forms.Select(),
+        # widget=admin.widgets.AutocompleteSelect(
+        #     ReportRun._meta.get_field("report_definition"), admin.site
+        # ),
     )
-    context1 = forms.ChoiceField(label="Context 1", required=False)
-    context2 = forms.ChoiceField(label="Context 2", required=False)
-    context3 = forms.ChoiceField(label="Context 3", required=False)
 
     def __init__(self, *args, **kwargs):
-        available_context_options = kwargs.pop("available_context_options", [])
-        disable_context1 = kwargs.pop("disable_context1", False)
+        model = kwargs.pop("model", None)
         super().__init__(*args, **kwargs)
-        choices = [("", "---------")] + [
-            (opt.pk, str(opt)) for opt in available_context_options
-        ]
-        self.fields["context1"].choices = choices
-        self.fields["context2"].choices = choices
-        self.fields["context3"].choices = choices
-        if disable_context1:
-            self.fields["context1"].widget.attrs["disabled"] = "disabled"
+
+        # Filter ReportDefinitions allowed for this model.
+        self.fields["report_definition"].queryset = (
+            ReportDefinition.filter_for_allowed_models(model)
+        )
+
+
+# This form will be built dynamically based on the ReportDefinition.
+# The ReportDefinition is expected to have a method get_required_context_fields()
+# that returns a tuple: (fixed_field_name, [other_field_names])
+class ConfigureReportContextForm(forms.Form):
+    # The fixed_field (e.g. "program") will be displayed as disabled.
+    def __init__(self, *args, **kwargs):
+        fixed_field = kwargs.pop("fixed_field", None)  # e.g. "program"
+        extra_simple_fields = kwargs.pop(
+            "extra_simple_fields", []
+        )  # e.g. ["constant_name"]
+
+        fixed_queryset = kwargs.pop(
+            "fixed_queryset", None
+        )  # The queryset from the changelist filter
+
+        super().__init__(*args, **kwargs)
+
+        # For the fixed field, we show a read-only summary (e.g. the number of records, or the filter value)
+        if fixed_field:
+            self.fields[fixed_field] = forms.CharField(
+                label=fixed_field.capitalize(),
+                initial=f"{fixed_queryset.count()} records",
+                disabled=True,
+            )
+
+        # For each additional field, add a text input.
+        for field in extra_simple_fields:
+            self.fields[field] = forms.CharField(label=field.capitalize(), required=False)
 
 
 class ReportGenerationAdminMixin(admin.ModelAdmin):
-    actions = ("generate_reports",)
-
-    @admin.action(description="Generate reports for selected records")
-    def generate_reports(self, request, queryset):
-        selected = queryset.values_list("pk", flat=True)
-        return HttpResponseRedirect(
-            f"generate_reports/?ids={','.join(map(str, selected))}"
-        )
+    change_list_template = "admin/report_generation_changelist.html"
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
             path(
-                "generate_reports/",
-                self.admin_site.admin_view(self.generate_reports_view),
-                name="generate_reports",
+                "generate_reports/choose/",
+                self.admin_site.admin_view(self.choose_report_definition_view),
+                name="choose_report_definition",
+            ),
+            path(
+                "generate_reports/configure/",
+                self.admin_site.admin_view(self.configure_report_context_view),
+                name="configure_report_context",
             ),
         ]
         return custom_urls + urls
 
-    @staticmethod
-    def get_permissible_qs(model_class, request):
-        return model_class.objects.all()
-
-    def generate_reports_view(self, request):
-        ids = request.GET.get("ids")
-        if not ids:
-            self.message_user(request, "No records selected.", level=messages.ERROR)
-            return redirect("..")
-        id_list = ids.split(",")
-        queryset = self.model.objects.filter(pk__in=id_list)
-        available_context_options = self.get_permissible_qs(self.model, request)
-        disable_context1 = queryset.exists()
-
+    def choose_report_definition_view(self, request):
+        """
+        Step 1: Display a form to choose a ReportDefinition.
+        The current filter (GET parameters) is preserved in the URL.
+        """
+        # Preserve all GET parameters (i.e. the list filter).
+        filter_params = request.GET.dict()
         if request.method == "POST":
-            form = ReportGenerationForm(
-                request.POST,
-                available_context_options=available_context_options,
-                disable_context1=disable_context1,
-            )
+            form = ChooseReportDefinitionForm(request.POST, model=self.model)
             if form.is_valid():
                 report_def = form.cleaned_data["report_definition"]
-                additional_context = {}
-                if not disable_context1:
-                    context1_id = form.cleaned_data.get("context1")
-                    if context1_id:
-                        additional_context["context1"] = available_context_options.get(
-                            pk=context1_id
-                        )
-                context2_id = form.cleaned_data.get("context2")
-                if context2_id:
-                    additional_context["context2"] = available_context_options.get(
-                        pk=context2_id
-                    )
-                context3_id = form.cleaned_data.get("context3")
-                if context3_id:
-                    additional_context["context3"] = available_context_options.get(
-                        pk=context3_id
-                    )
-
-                for record in queryset:
-                    # Build the context for the report. 'record' is always included.
-                    context = {"record": record}
-                    context.update(additional_context)
-
-                    # Determine an output file path (this example uses the record's pk).
-                    output_filename = f"report_{record.pk}.pptx"
-                    output_path = os.path.join("generated_reports", output_filename)
-
-                    # Render the PPTX template.
-                    rendered_file = render_pptx(
-                        report_def.pptx_template.path,
-                        context,
-                        output_path,
-                    )
-
-                    # Capture the run data in JSON (for example, store context info).
-                    run_data = {
-                        "context": {key: str(val) for key, val in context.items()}
-                    }
-
-                    ReportRun.objects.create(
-                        report_definition=report_def,
-                        run_data=run_data,
-                        generated_report=rendered_file,
-                    )
-                self.message_user(request, "Reports generated successfully.")
-                return redirect("..")
+                # Redirect to the configure context view, passing the report_def id and filter params.
+                params = {"report_def": report_def.pk}
+                params.update(filter_params)
+                url = reverse("admin:configure_report_context")
+                return HttpResponseRedirect(f"{url}?{urlencode(params)}")
         else:
-            form = ReportGenerationForm(
-                available_context_options=available_context_options,
-                disable_context1=disable_context1,
-            )
+            form = ChooseReportDefinitionForm(model=self.model)
         context = {
             "form": form,
-            "title": "Generate Reports",
+            "title": "Choose Report Template",
         }
-        return render(request, "admin/generate_reports.html", context)
+        return render(request, "admin/choose_report_definition.html", context)
+
+    def configure_report_context_view(self, request):
+        """
+        Step 2: Display a form to configure additional context for the report.
+        The fixed queryset is determined by applying the current filter parameters to the model.
+        The report definition's required context fields are obtained via a placeholder method.
+        """
+        # Extract the filter parameters from GET (all except "report_def").
+        report_def_id = request.GET.get("report_def")
+        if not report_def_id:
+            self.message_user(
+                request, "No report template selected.", level=messages.ERROR
+            )
+            return redirect("..")
+
+        # Build filter parameters for the queryset: use all GET parameters except report_def.
+        filter_params = request.GET.copy()
+        filter_params.pop("report_def", None)
+        # Extract search term 'q'
+        q = filter_params.pop("q", [""])[0]
+        # Build a base queryset from the remaining GET parameters.
+        qs = self.model.objects.filter(**filter_params)
+        # Now, if there's a search term, use get_search_results to filter qs.
+        if q:
+            qs, use_distinct = self.get_search_results(request, qs, q)
+
+        # Fetch the report template and extract its context requirements.
+        report_def = ReportDefinition.objects.get(pk=report_def_id)
+        context_requirements = report_def.extract_context_requirements()
+
+        # Check that we only have ONE top-level object context key required.
+        object_fields_required = context_requirements["object_fields"]
+        simple_fields_required = context_requirements["simple_fields"]
+        if len(object_fields_required) > 1:
+            self.message_user(
+                request,
+                f"The report template must have exactly one top-level object field among all its "
+                f"placeholders, but we found {object_fields_required}.",
+                level=messages.ERROR,
+            )
+            return redirect("..")
+        object_key_required = object_fields_required[0]
+
+        form_kwargs = dict(
+            fixed_field=object_key_required,
+            extra_simple_fields=simple_fields_required,
+            fixed_queryset=qs,
+        )
+
+        if request.method == "POST":
+            form = ConfigureReportContextForm(request.POST, **form_kwargs)
+            if form.is_valid():
+                additional_context = {}
+                for key, value in form.cleaned_data.items():
+                    # Skip the fixed field since it's disabled.
+                    if key == object_key_required:
+                        continue
+                    additional_context[key] = value
+                # For each record in the filtered queryset, generate a report.
+                has_errors = False
+                for record in qs:
+                    context_data = {object_key_required: record}
+                    context_data.update(additional_context)
+                    errors = report_def.run_report(
+                        context=context_data,
+                        perm_user=request.user,
+                    )
+                    # Errors, break immediately.
+                    if errors:
+                        self.message_user(
+                            request, f"Errors: {errors}", level=messages.ERROR
+                        )
+                        has_errors = True
+                # Success message
+                if not has_errors:
+                    runs_changelist_url = reverse(
+                        "admin:%s_%s_changelist"
+                        % (ReportRun._meta.app_label, ReportRun._meta.model_name)
+                    )
+                    self.message_user(
+                        request,
+                        format_html(
+                            "Reports generated successfully, see: <a href='{}'>here</a>",
+                            runs_changelist_url,
+                        ),
+                    )
+                # Redirect
+                changelist_url = reverse(
+                    "admin:%s_%s_changelist"
+                    % (self.model._meta.app_label, self.model._meta.model_name)
+                )
+                return redirect(changelist_url)
+        else:
+            form = ConfigureReportContextForm(**form_kwargs)
+        context = {
+            "form": form,
+            "title": "Configure Report Context",
+        }
+        return render(request, "admin/configure_report_context.html", context)
