@@ -1,3 +1,4 @@
+import random
 import sys
 import argparse
 import datetime
@@ -12,6 +13,7 @@ class DummyUser:
         self.email = email
         self.cohort = cohort
         self.is_active = is_active
+        self.rating = random.randint(1, 5)
 
     def __str__(self):
         return self.name
@@ -126,17 +128,14 @@ def main():
     # Create a dummy request user for permission checking.
     request_user = DummyRequestUser()
 
-    try:
-        rendered = render_pptx(
-            input_file,
-            context,
-            output_file,
-            perm_user=None,
-        )
+    rendered, errors = render_pptx(
+        input_file,
+        context,
+        output_file,
+        perm_user=None,
+    )
+    if rendered:
         print("Rendered PPTX saved to:", rendered)
-    except Exception as e:
-        print("Error during rendering:", e)
-        sys.exit(1)
 
 
 if __name__ == "__main__":
