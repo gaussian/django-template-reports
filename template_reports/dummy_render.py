@@ -84,13 +84,15 @@ def main():
     parser.add_argument(
         "--output",
         "-o",
-        help="Path to output PPTX file (defaults to same directory as input, named output_test.pptx)",
+        help="Path to output PPTX file (defaults to same directory as input, named dummy_test_output.pptx)",
     )
     args = parser.parse_args()
 
     input_file = args.input_file
     output_file = (
-        args.output if args.output else input_file.rsplit("/", 1)[0] + "/output_test.pptx"
+        args.output
+        if args.output
+        else input_file.rsplit("/", 1)[0] + "/dummy_test_output.pptx"
     )
 
     # Create dummy objects.

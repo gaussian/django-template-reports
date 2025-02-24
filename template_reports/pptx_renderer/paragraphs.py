@@ -37,7 +37,12 @@ def process_paragraph(paragraph, context, perm_user, mode="normal"):
 
     for run in paragraph.runs:
         current_text = run.text
-        processed = process_text(current_text, context, perm_user=perm_user, mode=mode)
+        processed = process_text(
+            current_text,
+            context,
+            perm_user=perm_user,
+            mode=mode,
+        )
         if isinstance(processed, str):
             run.text = processed
         else:

@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Test output creating
+template_reports/raw_templates/dummy_test_output.pptx
