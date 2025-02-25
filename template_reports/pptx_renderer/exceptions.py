@@ -20,3 +20,15 @@ class TableCellOverwriteError(Exception):
     """Raised when a table cell is overwritten with a new value."""
 
     pass
+
+
+class ChartError(Exception):
+    """Raised when an error occurs while processing a chart."""
+
+    pass
+
+
+class BadChartDataResultError(Exception):
+    """Raised when a processed value is invalid (i.e. result is not a float)."""
+
+    pass

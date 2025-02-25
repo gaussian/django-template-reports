@@ -8,11 +8,12 @@ from template_reports.pptx_renderer import render_pptx
 
 # Dummy context objects for testing.
 class DummyUser:
-    def __init__(self, name, email, cohort, is_active=True):
+    def __init__(self, name, email, cohort, impact, is_active=True):
         self.name = name
         self.email = email
         self.cohort = cohort
         self.is_active = is_active
+        self.impact = impact
         self.rating = random.randint(1, 5)
 
     def __str__(self):
@@ -100,13 +101,17 @@ def main():
     # Create dummy objects.
     cohort = DummyCohort(name="Cohort A")
     user = DummyUser(
-        name="Alice", email="alice@example.com", cohort=cohort, is_active=True
+        name="Alice", email="alice@example.com", cohort=cohort, impact=10, is_active=True
     )
-    bob = DummyUser(name="Bob", email="bob@test.com", cohort=cohort, is_active=True)
+    bob = DummyUser(
+        name="Bob", email="bob@test.com", cohort=cohort, impact=20, is_active=True
+    )
     carol = DummyUser(
-        name="Carol", email="carol@test.com", cohort=cohort, is_active=False
+        name="Carol", email="carol@test.com", cohort=cohort, impact=30, is_active=False
     )
-    todd = DummyUser(name="Todd", email="todd@test.com", cohort=cohort, is_active=True)
+    todd = DummyUser(
+        name="Todd", email="todd@test.com", cohort=cohort, impact=40, is_active=True
+    )
     users_qs = DummyQuerySet([bob, carol, todd])
     program = DummyProgram(name="Test Program", users=users_qs)
     dummy_date = datetime.date(2020, 1, 15)
