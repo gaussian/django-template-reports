@@ -1,3 +1,4 @@
+import random
 import sys
 import argparse
 import datetime
@@ -7,11 +8,13 @@ from template_reports.pptx_renderer import render_pptx
 
 # Dummy context objects for testing.
 class DummyUser:
-    def __init__(self, name, email, cohort, is_active=True):
+    def __init__(self, name, email, cohort, impact, is_active=True):
         self.name = name
         self.email = email
         self.cohort = cohort
         self.is_active = is_active
+        self.impact = impact
+        self.rating = random.randint(1, 5)
 
     def __str__(self):
         return self.name
@@ -84,25 +87,31 @@ def main():
     parser.add_argument(
         "--output",
         "-o",
-        help="Path to output PPTX file (defaults to same directory as input, named output_test.pptx)",
+        help="Path to output PPTX file (defaults to same directory as input, named dummy_test_output.pptx)",
     )
     args = parser.parse_args()
 
     input_file = args.input_file
     output_file = (
-        args.output if args.output else input_file.rsplit("/", 1)[0] + "/output_test.pptx"
+        args.output
+        if args.output
+        else input_file.rsplit("/", 1)[0] + "/dummy_test_output.pptx"
     )
 
     # Create dummy objects.
     cohort = DummyCohort(name="Cohort A")
     user = DummyUser(
-        name="Alice", email="alice@example.com", cohort=cohort, is_active=True
+        name="Alice", email="alice@example.com", cohort=cohort, impact=10, is_active=True
     )
-    bob = DummyUser(name="Bob", email="bob@test.com", cohort=cohort, is_active=True)
+    bob = DummyUser(
+        name="Bob", email="bob@test.com", cohort=cohort, impact=20, is_active=True
+    )
     carol = DummyUser(
-        name="Carol", email="carol@test.com", cohort=cohort, is_active=False
+        name="Carol", email="carol@test.com", cohort=cohort, impact=30, is_active=False
     )
-    todd = DummyUser(name="Todd", email="todd@test.com", cohort=cohort, is_active=True)
+    todd = DummyUser(
+        name="Todd", email="todd@test.com", cohort=cohort, impact=40, is_active=True
+    )
     users_qs = DummyQuerySet([bob, carol, todd])
     program = DummyProgram(name="Test Program", users=users_qs)
     dummy_date = datetime.date(2020, 1, 15)
@@ -124,17 +133,14 @@ def main():
     # Create a dummy request user for permission checking.
     request_user = DummyRequestUser()
 
-    try:
-        rendered = render_pptx(
-            input_file,
-            context,
-            output_file,
-            perm_user=None,
-        )
+    rendered, errors = render_pptx(
+        input_file,
+        context,
+        output_file,
+        perm_user=None,
+    )
+    if rendered:
         print("Rendered PPTX saved to:", rendered)
-    except Exception as e:
-        print("Error during rendering:", e)
-        sys.exit(1)
 
 
 if __name__ == "__main__":

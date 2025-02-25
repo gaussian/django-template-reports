@@ -100,7 +100,13 @@ class BaseReportDefinition(models.Model):
         ReportRun = swapper.load_model("template_reports", "ReportRun")
         ReportRun.objects.create(
             report_definition=self,
-            data={"context": {k: str(v) for k, v in context.items()}},
+            data={
+                "context": {k: str(v) for k, v in context.items()},
+                "perm_user": {
+                    "pk": perm_user.pk,
+                    "str": str(perm_user),
+                },
+            },
             file=output_content,
         )
 

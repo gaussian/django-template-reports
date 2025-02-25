@@ -1,4 +1,6 @@
 from pptx import Presentation
+
+from .charts import process_chart
 from .paragraphs import process_paragraph
 from .tables import process_table_cell
 
@@ -33,7 +35,7 @@ def render_pptx(template, context, output, perm_user):
                     except Exception as e:
                         errors.append(f"Error in paragraph: {e}")
             # 2) Process tables.
-            if getattr(shape, "has_table", False) and shape.has_table:
+            if getattr(shape, "has_table", False):
                 for row in shape.table.rows:
                     for cell in row.cells:
                         try:
@@ -44,6 +46,16 @@ def render_pptx(template, context, output, perm_user):
                             )
                         except Exception as e:
                             errors.append(f"Error in table cell: {e}")
+            # 3) Process chart spreadsheets.
+            if getattr(shape, "has_chart", False):
+                try:
+                    process_chart(
+                        shape.chart,
+                        context,
+                        perm_user,
+                    )
+                except Exception as e:
+                    errors.append(f"Error in chart: {e}")
 
     if errors:
         print("Rendering aborted due to the following errors:")
