@@ -17,6 +17,11 @@ dependencies = [
   "python-pptx>=1,<2",
 ]
 
+[project.optional-dependencies]
+xlsx = [
+  "openpyxl>=3,<4",
+]
+
 [project.urls]
 Homepage = "https://github.com/gaussian/django-template-reports"
 Issues = "https://github.com/gaussian/django-template-reports/issues"

@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 from io import BytesIO
 from itertools import zip_longest
+from typing import TYPE_CHECKING
 
-from pptx.chart.chart import Chart
 from pptx.chart.data import ChartData
-from openpyxl import load_workbook
 
 from template_reports.templating.core import get_matching_tags, process_text
 
 from .exceptions import BadChartDataResultError, ChartError, TableError
+
+if TYPE_CHECKING:
+    from pptx.chart.chart import Chart
 
 
 def process_chart(chart: Chart, context: dict, perm_user):
@@ -70,6 +74,12 @@ def process_series_data(chart, context, perm_user):
     the XML) and so we need to go to the underlying Excel workbook to update
     the data.
     """
+
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        raise ChartError("Chart found, but required package (openpyxl) is not installed.")
+
     # Access the embedded Excel workbook via the chart's part.
     chart_part = chart.part
     chart_workbook = chart_part.chart_workbook
