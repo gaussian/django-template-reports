@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 import swapper
 
-from template_reports.pptx_renderer import render_pptx, extract_context_keys
+from template_reports.office_renderer import render_pptx, extract_context_keys
 
 from .utils import get_storage
 
