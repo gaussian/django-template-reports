@@ -17,13 +17,6 @@ class BaseReportDefinition(models.Model):
 
     file = models.FileField(upload_to="template_reports/templates/", storage=get_storage)
 
-    # A set of allowed models (via ContentType) for which this report may run
-    # allowed_models = models.ManyToManyField(ContentType, blank=True)
-
-    # A JSON structure describing the required context keys
-    # For example: {"record": "model", "teams": "queryset", "extra_info": "string"}
-    # required_keys = models.JSONField(default=dict, blank=True)
-
     config = models.JSONField(
         default=dict, blank=True, help_text="Configuration JSON, including allowed models"
     )
