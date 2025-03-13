@@ -1,12 +1,13 @@
 import datetime
 from io import BytesIO
+from typing import Any
 
 from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models import Q
 import swapper
 
-from template_reports.pptx_renderer import render_pptx, extract_context_keys
+from template_reports.office_renderer import render_pptx, extract_context_keys
 
 from .utils import get_storage
 
@@ -16,13 +17,6 @@ class BaseReportDefinition(models.Model):
     description = models.TextField(blank=True)
 
     file = models.FileField(upload_to="template_reports/templates/", storage=get_storage)
-
-    # A set of allowed models (via ContentType) for which this report may run
-    # allowed_models = models.ManyToManyField(ContentType, blank=True)
-
-    # A JSON structure describing the required context keys
-    # For example: {"record": "model", "teams": "queryset", "extra_info": "string"}
-    # required_keys = models.JSONField(default=dict, blank=True)
 
     config = models.JSONField(
         default=dict, blank=True, help_text="Configuration JSON, including allowed models"
@@ -100,18 +94,27 @@ class BaseReportDefinition(models.Model):
         ReportRun = swapper.load_model("template_reports", "ReportRun")
         ReportRun.objects.create(
             report_definition=self,
-            data={
+            file=output_content,
+            **self.get_extra_creation_kwargs(context, perm_user),
+        )
+
+        # Success
+        return None
+
+    def get_extra_creation_kwargs(self, context: dict, perm_user) -> dict[str, Any]:
+        """
+        Return the extra kwargs for a report run with the given context and user.
+        Override this method to add more data or metadata.
+        """
+        return {
+            "data": {
                 "context": {k: str(v) for k, v in context.items()},
                 "perm_user": {
                     "pk": perm_user.pk,
                     "str": str(perm_user),
                 },
-            },
-            file=output_content,
-        )
-
-        # Success
-        return None
+            }
+        }
 
 
 class BaseReportRun(models.Model):

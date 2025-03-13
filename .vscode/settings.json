@@ -1,6 +1,15 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.terminal.activateEnvironment": true,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
     "editor.formatOnSave": false,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
@@ -22,13 +31,4 @@
     "[jsonc]": {
         "editor.tabSize": 4
     },
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests",
-        "-p",
-        "test*.py"
-    ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": true,
 }
