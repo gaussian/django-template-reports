@@ -1,5 +1,6 @@
 import datetime
 from io import BytesIO
+from typing import Any
 
 from django.core.files.base import ContentFile
 from django.db import models
@@ -93,18 +94,27 @@ class BaseReportDefinition(models.Model):
         ReportRun = swapper.load_model("template_reports", "ReportRun")
         ReportRun.objects.create(
             report_definition=self,
-            data={
+            file=output_content,
+            **self.get_extra_creation_kwargs(context, perm_user),
+        )
+
+        # Success
+        return None
+
+    def get_extra_creation_kwargs(self, context: dict, perm_user) -> dict[str, Any]:
+        """
+        Return the extra kwargs for a report run with the given context and user.
+        Override this method to add more data or metadata.
+        """
+        return {
+            "data": {
                 "context": {k: str(v) for k, v in context.items()},
                 "perm_user": {
                     "pk": perm_user.pk,
                     "str": str(perm_user),
                 },
-            },
-            file=output_content,
-        )
-
-        # Success
-        return None
+            }
+        }
 
 
 class BaseReportRun(models.Model):
