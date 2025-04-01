@@ -8,7 +8,12 @@ from django.db import models
 from django.db.models import Q
 import swapper
 
-from template_reports.office_renderer import render_pptx, extract_context_keys
+from template_reports.office_renderer import (
+    render_pptx,
+    render_xlsx,
+    extract_context_keys,
+    identify_file_type,
+)
 from template_reports.templating import process_text
 
 from .utils import get_storage
@@ -75,20 +80,41 @@ class BaseReportDefinition(models.Model):
         # Prepare an output stream to save to
         output = BytesIO()
 
-        # Render the file
-        _, errors = render_pptx(
-            template=file_stream,
-            output=output,
-            context=context,
-            perm_user=perm_user,
-        )
+        # Get the file type
+        file_type = identify_file_type(file_stream)
+
+        # Render if PPTX
+        if file_type == "pptx":
+            _, errors = render_pptx(
+                template=file_stream,
+                context=context,
+                output=output,
+                perm_user=perm_user,
+            )
+
+        # Render if XLSX
+        elif file_type == "xlsx":
+            _, errors = render_xlsx(
+                template=file_stream,
+                context=context,
+                output=output,
+                perm_user=perm_user,
+            )
+
+        # Shouldn't happen, but just in case
+        else:
+            assert False, f"Unsupported file type: {file_type}"
 
         # Errors
         if errors:
             return errors
 
         # Build the filename
-        filename = self.build_filename(context=context, perm_user=perm_user)
+        filename = self.build_filename(
+            context=context,
+            perm_user=perm_user,
+            file_type=file_type,
+        )
 
         # Get additional data to save to the report run
         metadata = self.get_extra_creation_kwargs(
@@ -114,7 +140,12 @@ class BaseReportDefinition(models.Model):
         # Success
         return None
 
-    def build_filename(self, context: dict, perm_user) -> str:
+    def build_filename(
+        self,
+        context: dict,
+        perm_user,
+        file_type: str,
+    ) -> str:
         """
         Return the desired name of the template file. Override this method
         to customize the file name.
@@ -146,11 +177,12 @@ class BaseReportDefinition(models.Model):
         # Default filename generation
         else:
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"report-{timestamp}.pptx"
+            filename = f"report-{timestamp}"
 
-        # Ensure the filename ends with .pptx
-        if not filename.endswith(".pptx"):
-            filename += ".pptx"
+        # Ensure the filename ends with extension
+        extension = f".{file_type}"
+        if not filename.endswith(extension):
+            filename += extension
 
         # Replace certain characters with hyphens, using regex
         filename = re.sub(r"[@&#+\s]", "-", filename)
