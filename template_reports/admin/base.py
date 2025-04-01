@@ -62,15 +62,25 @@ class ReportRunAdmin(AdminWithFileUrl):
             for record in queryset:
                 # Ensure the record has an associated file
                 if record.file:
-                    # Open the file (you may need to handle remote storage differently)
-                    record.file.open()
-                    # Read the file's contents
-                    file_content = record.file.read()
-                    # Using record.file.name might include the full storage path.
-                    zip_filename = record.file.name.split("/")[-1]
-                    # Write the file into the archive
-                    zip_archive.writestr(zip_filename, file_content)
-                    record.file.close()
+                    try:
+                        # Open the file
+                        record.file.open()
+                        # Read the file's contents
+                        file_content = record.file.read()
+                        # Using record.file.name might include the full storage path.
+                        zip_filename = record.file.name.split("/")[-1]
+                        # Write the file into the archive
+                        zip_archive.writestr(zip_filename, file_content)
+                    except Exception as e:
+                        # Log the error or handle it as needed
+                        self.message_user(
+                            request,
+                            f"Failed to process file {record.file.name}: {e}",
+                            level="error",
+                        )
+                    finally:
+                        # Ensure the file is closed
+                        record.file.close()
 
         # Rewind the buffer so it can be read from the beginning
         buffer.seek(0)
