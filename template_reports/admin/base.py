@@ -77,7 +77,7 @@ class ReportRunAdmin(AdminWithFileUrl):
 
         # Create the HTTP response with the zip archive
         response = HttpResponse(buffer.getvalue(), content_type="application/zip")
-        timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
         filename = f"reports-{timestamp}.zip"
         response["Content-Disposition"] = f"attachment; filename={filename}"
         return response
