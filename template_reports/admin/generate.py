@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
+
 from django import forms
-from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
@@ -10,46 +10,6 @@ import swapper
 
 ReportDefinition = swapper.load_model("template_reports", "ReportDefinition")
 ReportRun = swapper.load_model("template_reports", "ReportRun")
-
-
-class AdminWithFileUrl(admin.ModelAdmin):
-    @admin.display(description="File link")
-    def file_link(self, obj):
-        return format_html(
-            "<a href=' {url}' target='_blank'>{text}</a>",  # SPACE IS NEEDED!
-            url=obj.file.url,
-            text="Link",
-        )
-
-
-class ReportDefinitionAdmin(AdminWithFileUrl):
-    search_fields = ("name",)
-    list_display = (
-        "name",
-        "created",
-        "modified",
-    )
-
-
-if not settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL:
-    admin.site.register(ReportDefinition, ReportDefinitionAdmin)
-
-
-class ReportRunAdmin(AdminWithFileUrl):
-    autocomplete_fields = ("report_definition",)
-
-    list_display = (
-        "created",
-        "report_definition",
-        "file_link",
-        "is_active",
-    )
-
-    ordering = ("-created",)
-
-
-if not settings.TEMPLATE_REPORTS_REPORTRUN_MODEL:
-    admin.site.register(ReportRun, ReportRunAdmin)
 
 
 class ChooseReportDefinitionForm(forms.Form):
@@ -230,11 +190,15 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                             runs_changelist_url,
                         ),
                     )
-                # Redirect
+                # Redirect (preserve original query parameters except report_def)
                 changelist_url = reverse(
                     "admin:%s_%s_changelist"
                     % (self.model._meta.app_label, self.model._meta.model_name)
                 )
+                query_params = request.GET.copy()
+                query_params.pop("report_def", None)
+                if query_params:
+                    changelist_url = f"{changelist_url}?{urlencode(query_params)}"
                 return redirect(changelist_url)
         else:
             form = ConfigureReportContextForm(**form_kwargs)

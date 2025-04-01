@@ -1,5 +1,6 @@
 import datetime
 from io import BytesIO
+import re
 from typing import Any
 
 from django.core.files.base import ContentFile
@@ -8,6 +9,7 @@ from django.db.models import Q
 import swapper
 
 from template_reports.office_renderer import render_pptx, extract_context_keys
+from template_reports.templating import process_text
 
 from .utils import get_storage
 
@@ -35,12 +37,13 @@ class BaseReportDefinition(models.Model):
     def filter_for_allowed_models(cls, model):
         """
         Return a queryset of ReportDefinitions that are allowed to run for the given model.
-        If no model is provided, return all ReportDefinitions.
+        If no models are provided, return all ReportDefinitions.
         """
         if model:
             full_model_name = f"{model._meta.app_label}.{model._meta.model_name}"
             return cls.objects.filter(
                 Q(config__allowed_models__contains=[full_model_name])
+                | Q(config__allowed_models=[])
                 | Q(config__allowed_models__isnull=True)
             )
         return cls.objects.all()
@@ -84,22 +87,103 @@ class BaseReportDefinition(models.Model):
         if errors:
             return errors
 
+        # Build the filename
+        filename = self.build_filename(context=context, perm_user=perm_user)
+
+        # Get additional data to save to the report run
+        metadata = self.get_extra_creation_kwargs(
+            context,
+            perm_user,
+        )
+
         # Create a Django ContentFile from the bytes
-        # (create a timestamp string)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = f"report-{timestamp}.pptx"
-        output_content = ContentFile(output.getvalue(), name=filename)
+        # (use the filename method)
+        output_content = ContentFile(
+            output.getvalue(),
+            name=filename,
+        )
 
         # Save the generated report
         ReportRun = swapper.load_model("template_reports", "ReportRun")
         ReportRun.objects.create(
             report_definition=self,
             file=output_content,
-            **self.get_extra_creation_kwargs(context, perm_user),
+            **metadata,
         )
 
         # Success
         return None
+
+    def build_filename(self, context: dict, perm_user) -> str:
+        """
+        Return the desired name of the template file. Override this method
+        to customize the file name.
+
+        The default implementation generates a name based on the current
+        timestamp, e.g., "report-20231005123456.pptx".
+
+        If a filename template is provided in the config, it will be used
+        to generate the filename. The template can include placeholders
+        just like the reports themselves.
+        """
+
+        # Check if a filename template is provided in the config
+        filename_template = (self.config or {}).get("filename_template", None)
+        if filename_template:
+            # Add the perm_user to the context
+            context = {
+                **context,
+                "perm_user": perm_user,
+            }
+            filename = str(
+                process_text(
+                    text=filename_template,
+                    context=context,
+                    perm_user=perm_user,
+                )
+            )
+
+        # Default filename generation
+        else:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            filename = f"report-{timestamp}.pptx"
+
+        # Ensure the filename ends with .pptx
+        if not filename.endswith(".pptx"):
+            filename += ".pptx"
+
+        # Replace certain characters with hyphens, using regex
+        filename = re.sub(r"[@&#+\s]", "-", filename)
+
+        return filename
+
+    @classmethod
+    def serialize_context_item_value(cls, value):
+        """
+        Serialize a context item value for storage in the BaseReportRun record.
+        """
+        # If the value has a primary key, return its string representation.
+        if hasattr(value, "pk"):
+            return {
+                "pk": str(value.pk),
+                "str": str(value),
+                "model": f"{value._meta.app_label}.{value._meta.model_name}",
+            }
+
+        # If the value is a list, serialize each item.
+        if isinstance(value, list):
+            return [cls.serialize_context_item_value(v) for v in value]
+
+        # If the value is a dict, serialize each key-value pair.
+        if isinstance(value, dict):
+            return {k: cls.serialize_context_item_value(v) for k, v in value.items()}
+
+        # If the value is a datetime, return its ISO format.
+        if isinstance(value, datetime.datetime):
+            return value.isoformat()
+
+        # Otherwise, return the string representation of the value.
+        return str(value)
 
     def get_extra_creation_kwargs(self, context: dict, perm_user) -> dict[str, Any]:
         """
@@ -108,11 +192,8 @@ class BaseReportDefinition(models.Model):
         """
         return {
             "data": {
-                "context": {k: str(v) for k, v in context.items()},
-                "perm_user": {
-                    "pk": str(perm_user.pk),
-                    "str": str(perm_user),
-                },
+                "context": self.serialize_context_item_value(context),
+                "perm_user": self.serialize_context_item_value(perm_user),
             }
         }
 
