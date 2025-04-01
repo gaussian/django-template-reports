@@ -45,6 +45,17 @@ class BaseReportDefinition(models.Model):
             )
         return cls.objects.all()
 
+    def build_filename(self):
+        """
+        Return the desired name of the template file. Override this method
+        to customize the file name.
+
+        The default implementation generates a name based on the current
+        timestamp, e.g., "report-20231005123456.pptx".
+        """
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        return f"report-{timestamp}.pptx"
+
     def get_file_stream(self):
         self.file.seek(0)
         file_data = self.file.read()
@@ -85,10 +96,11 @@ class BaseReportDefinition(models.Model):
             return errors
 
         # Create a Django ContentFile from the bytes
-        # (create a timestamp string)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = f"report-{timestamp}.pptx"
-        output_content = ContentFile(output.getvalue(), name=filename)
+        # (use the filename method)
+        output_content = ContentFile(
+            output.getvalue(),
+            name=self.build_filename(),
+        )
 
         # Save the generated report
         ReportRun = swapper.load_model("template_reports", "ReportRun")

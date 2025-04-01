@@ -61,7 +61,6 @@ class ReportRunAdmin(AdminWithFileUrl):
                     record.file.open()
                     # Read the file's contents
                     file_content = record.file.read()
-                    # TODO: set a nicer file name?
                     # Using record.file.name might include the full storage path.
                     zip_filename = record.file.name.split("/")[-1]
                     # Write the file into the archive
