@@ -190,11 +190,15 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                             runs_changelist_url,
                         ),
                     )
-                # Redirect
+                # Redirect (preserve original query parameters except report_def)
                 changelist_url = reverse(
                     "admin:%s_%s_changelist"
                     % (self.model._meta.app_label, self.model._meta.model_name)
                 )
+                query_params = request.GET.copy()
+                query_params.pop("report_def", None)
+                if query_params:
+                    changelist_url = f"{changelist_url}?{urlencode(query_params)}"
                 return redirect(changelist_url)
         else:
             form = ConfigureReportContextForm(**form_kwargs)
