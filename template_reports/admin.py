@@ -213,10 +213,10 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                     )
                     # Errors, break immediately.
                     if errors:
-                        self.message_user(
-                            request, f"Errors: {errors}", level=messages.ERROR
-                        )
+                        for error in errors:
+                            self.message_user(request, error, level=messages.ERROR)
                         has_errors = True
+                        break
                 # Success message
                 if not has_errors:
                     runs_changelist_url = reverse(

@@ -110,7 +110,7 @@ class BaseReportDefinition(models.Model):
             "data": {
                 "context": {k: str(v) for k, v in context.items()},
                 "perm_user": {
-                    "pk": perm_user.pk,
+                    "pk": str(perm_user.pk),
                     "str": str(perm_user),
                 },
             }
