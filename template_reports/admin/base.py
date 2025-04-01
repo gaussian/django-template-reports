@@ -13,12 +13,16 @@ ReportRun = swapper.load_model("template_reports", "ReportRun")
 
 
 class AdminWithFileUrl(admin.ModelAdmin):
+    @admin.display(description="File name")
+    def file_name(self, obj):
+        return obj.file.name.split("/")[-1]
+
     @admin.display(description="File link")
     def file_link(self, obj):
         return format_html(
             "<a href=' {url}' target='_blank'>{text}</a>",  # SPACE IS NEEDED!
             url=obj.file.url,
-            text="Link",
+            text="Download ⬇️",
         )
 
 
@@ -40,8 +44,9 @@ class ReportRunAdmin(AdminWithFileUrl):
     search_fields = ("report_definition__name",)
 
     list_display = (
-        "report_definition",
+        "file_name",
         "file_link",
+        "report_definition",
         "created",
         "is_active",
     )
