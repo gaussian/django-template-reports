@@ -35,12 +35,13 @@ class BaseReportDefinition(models.Model):
     def filter_for_allowed_models(cls, model):
         """
         Return a queryset of ReportDefinitions that are allowed to run for the given model.
-        If no model is provided, return all ReportDefinitions.
+        If no models are provided, return all ReportDefinitions.
         """
         if model:
             full_model_name = f"{model._meta.app_label}.{model._meta.model_name}"
             return cls.objects.filter(
                 Q(config__allowed_models__contains=[full_model_name])
+                | Q(config__allowed_models=[])
                 | Q(config__allowed_models__isnull=True)
             )
         return cls.objects.all()
