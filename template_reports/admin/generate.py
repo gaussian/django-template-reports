@@ -65,21 +65,40 @@ class ConfigureReportContextForm(forms.Form):
 class ReportGenerationAdminMixin(admin.ModelAdmin):
     change_list_template = "admin/report_generation_changelist.html"
 
+    @property
+    def choose_report_definition_url_name(self):
+        return f"{self.model._meta.app_label}_{self.model._meta.model_name}_choose_report_definition"
+
+    @property
+    def configure_report_context_url_name(self):
+        return f"{self.model._meta.app_label}_{self.model._meta.model_name}_configure_report_context"
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
             path(
                 "generate_reports/choose/",
                 self.admin_site.admin_view(self.choose_report_definition_view),
-                name="choose_report_definition",
+                name=self.choose_report_definition_url_name,
             ),
             path(
                 "generate_reports/configure/",
                 self.admin_site.admin_view(self.configure_report_context_view),
-                name="configure_report_context",
+                name=self.configure_report_context_url_name,
             ),
         ]
         return custom_urls + urls
+
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+
+        # Pass the full URL into the context.
+        extra_context["choose_report_definition_url"] = reverse(
+            f"admin:{self.choose_report_definition_url_name}"
+        )
+
+        return super().changelist_view(request, extra_context=extra_context)
 
     def choose_report_definition_view(self, request):
         """
@@ -95,7 +114,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                 # Redirect to the configure context view, passing the report_def id and filter params.
                 params = {"report_def": report_def.pk}
                 params.update(filter_params)
-                url = reverse("admin:configure_report_context")
+                url = reverse(f"admin:{self.configure_report_context_url_name}")
                 return HttpResponseRedirect(f"{url}?{urlencode(params)}")
         else:
             form = ChooseReportDefinitionForm(model=self.model)
