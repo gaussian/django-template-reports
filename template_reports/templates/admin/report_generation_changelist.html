@@ -2,7 +2,7 @@
 {% load i18n %}
 {% block object-tools-items %}
   <li>
-    <a href="{% url 'admin:choose_report_definition' %}?{{ request.GET.urlencode }}" class="button">Generate Reports</a>
+    <a href="{{ choose_report_definition_url }}?{{ request.GET.urlencode }}" class="button">Generate Reports</a>
   </li>
   {{ block.super }}
 {% endblock %}
