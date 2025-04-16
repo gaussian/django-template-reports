@@ -193,7 +193,11 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                     # Errors, break immediately.
                     if errors:
                         for error in errors:
-                            self.message_user(request, error, level=messages.ERROR)
+                            self.message_user(
+                                request,
+                                f"{record} - {error}",
+                                level=messages.ERROR,
+                            )
                         has_errors = True
                         break
                 # Success message
