@@ -74,6 +74,13 @@ class BaseReportDefinition(models.Model):
         Save the generated report file as ReportRun.
         """
 
+        # Enrich the context with the global context
+        global_context = self.get_global_context()
+        context = {
+            **global_context,
+            **context,
+        }
+
         # Get the file as a usable stream
         file_stream = self.get_file_stream()
 
@@ -139,6 +146,16 @@ class BaseReportDefinition(models.Model):
 
         # Success
         return None
+
+    def get_global_context(self):
+        """
+        Return the global context for the report. This can be used to
+        provide additional data to the template rendering process.
+
+        Override this if context needs to be pulled from elsewhere too.
+        """
+        config = self.config or {}
+        return config.get("context", {})
 
     def build_filename(
         self,
