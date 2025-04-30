@@ -156,6 +156,14 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
         # Check that we only have ONE top-level object context key required.
         object_fields_required = context_requirements["object_fields"]
         simple_fields_required = context_requirements["simple_fields"]
+        if not object_fields_required:
+            self.message_user(
+                request,
+                f"The report template does not have any top-level object fields, it needs exactly "
+                f"one: {object_fields_required}.",
+                level=messages.ERROR,
+            )
+            return redirect("..")
         if len(object_fields_required) > 1:
             self.message_user(
                 request,
