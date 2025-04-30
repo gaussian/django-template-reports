@@ -43,6 +43,14 @@ class ReportRunAdmin(AdminWithFileUrl):
     autocomplete_fields = ("report_definition",)
     search_fields = ("report_definition__name",)
 
+    readonly_fields = (
+        "file_name",
+        "report_definition",
+        "created",
+        "modified",
+        "data",
+    )
+
     list_display = (
         "file_name",
         "file_link",
