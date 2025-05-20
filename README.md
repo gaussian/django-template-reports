@@ -15,7 +15,7 @@ Django Template Reports is a Django application that turns PowerPoint (PPTX) and
 * **Configurable filenames** using ``config.filename_template`` in ``ReportDefinition``.
 * **Global context** injection for values that should always be available.
 * **Context extraction** to inspect templates and determine which context keys are required.
-* **Image placeholders** – shapes or cells starting with ``%image% URL`` are replaced by an image downloaded from that URL.
+* **Image placeholders** – shapes or cells starting with ``%imagesqueeze%`` or ``%image%`` are replaced by an image downloaded from the provided URL.
 
 ## Codebase Overview
 
@@ -23,7 +23,7 @@ Django Template Reports is a Django application that turns PowerPoint (PPTX) and
 
 * ``models/`` – base classes ``ReportDefinition`` and ``ReportRun`` plus utilities for file storage.
 * ``admin/`` – Django admin classes and views used to generate reports and download them in bulk.
-* ``office_renderer/`` – logic for rendering PPTX and XLSX files.  This handles text boxes, tables, charts, worksheets and the new `%image%` directives.
+* ``office_renderer/`` – logic for rendering PPTX and XLSX files.  This handles text boxes, tables, charts, worksheets and the `%image%`/`%imagesqueeze%` directives.
 * ``templating/`` – the template engine responsible for parsing and evaluating expressions.
 * ``templates/`` and ``raw_templates/`` – the admin templates and example Office templates.
 * ``tests/`` – the test suite.
@@ -42,9 +42,10 @@ Template files are just normal PowerPoint or Excel documents.  No coding or macr
    * `{{ amount * 1.15 }}` – perform calculations.
    * `{{ price | .2f }}` or `{{ name | upper }}` – apply formatting filters.
 3. **Repeat rows or slides for lists.** If a placeholder by itself resolves to a list, extra rows (or slides) will be created so that each item appears separately.  This is how you build tables from querysets.
-4. **Add images.** To include an image from a URL, create a text box or cell that starts with `%image%` followed by the address:
+4. **Add images.** To include an image from a URL, create a text box or cell that starts with `%image%` or `%imagesqueeze%` followed by the address:
    `%image% https://example.com/logo.png`
-   The placeholder will be replaced by the downloaded image when the report is generated.
+   `%imagesqueeze% https://example.com/logo.png`
+   The former keeps the image's aspect ratio while fitting it inside the shape. The latter squeezes the image to exactly fill the shape.
 5. **Save the file** and register it in the Django admin as a report template.
 
 You can experiment with the example files in `template_reports/raw_templates` to see common patterns.  Remember that all placeholders are plain text—avoid formulas or punctuation that might confuse the parser.
