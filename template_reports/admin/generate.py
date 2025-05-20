@@ -167,16 +167,20 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
             self.message_user(
                 request,
                 f"The report template must have exactly one top-level object field among all its "
-                f"placeholders, but we found {object_fields_required}.",
+                f"placeholders, but we found `{object_fields_required}`.",
                 level=messages.ERROR,
             )
             return redirect("..")
         object_key_required = object_fields_required[0]
 
+        # Get defaults for the extra simple fields from the report definition.
+        simple_field_defaults = report_def.get_global_context()
+
         form_kwargs = dict(
             fixed_field=object_key_required,
             extra_simple_fields=simple_fields_required,
             fixed_queryset=qs,
+            initial=simple_field_defaults
         )
 
         if request.method == "POST":
