@@ -159,8 +159,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
         if not object_fields_required:
             self.message_user(
                 request,
-                f"The report template does not have any top-level object fields, it needs exactly "
-                f"one: {object_fields_required}.",
+                f"The report template does not have any top-level object fields, it needs exactly one.",
                 level=messages.ERROR,
             )
             return redirect("..")
