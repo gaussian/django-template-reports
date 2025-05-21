@@ -174,7 +174,7 @@ In PowerPoint templates, you can use special loop directives to repeat slides fo
 Slides between these markers (inclusive) are duplicated for each item in the collection.
 Each duplicate gets the variable (`user` in this example) set to a different item.
 
-See the separate "Looping in PowerPoint Templates.md" guide for complete details.
+See the separate [Looping in PowerPoint Templates.md](./Looping%20in%20PowerPoint%20Templates.md) guide for complete details.
 
 ---
 
