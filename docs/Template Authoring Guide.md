@@ -161,7 +161,24 @@ Remember you can use the nested placeholders, so you could always do:
 
 ---
 
-## 9. Best Practices
+## 9. Looping in PowerPoint
+
+In PowerPoint templates, you can use special loop directives to repeat slides for items in a collection:
+
+```
+%loop user in users%           • First slide of loop section
+... Content with {{ user.name }} etc.
+%endloop%                      • Last slide of loop section
+```
+
+Slides between these markers (inclusive) are duplicated for each item in the collection.
+Each duplicate gets the variable (`user` in this example) set to a different item.
+
+See the separate "Looping in PowerPoint Templates.md" guide for complete details.
+
+---
+
+## 10. Best Practices
 
 1. **Design first**: Lay out your slide or sheet exactly as you want the final report to look.  
 2. **Use plain text**: Avoid formulas or extra punctuation inside `{{ }}`.  
@@ -181,6 +198,7 @@ Remember you can use the nested placeholders, so you could always do:
 | Uppercase      | `{{ title | upper }}`               | REPORT TITLE                   |
 | Math           | `{{ price * 1.2 }}`                 | 240.00                         |
 | Filter         | `{{ items[type="A"].count }}`       | [count1, count2, …]            |
+| Loop (PPTX)    | `%loop user in users%`              | Repeats slides with user data  |
 | Image          | `%image% https://…/logo.png`        | (embedded logo)                |
 
 With this guide, you’ll be able to build dynamic, data-driven slides and spreadsheets—no code required!
