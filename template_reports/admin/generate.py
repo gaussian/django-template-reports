@@ -13,23 +13,32 @@ ReportRun = swapper.load_model("template_reports", "ReportRun")
 
 
 class ChooseReportDefinitionForm(forms.Form):
+    """
+    Lets an admin pick a ReportDefinition via a Select2 autocomplete
+    instead of a giant <select>.  We reuse the FK on ReportRun so we
+    don't have to invent a dummy model just for the widget.
+    """
     report_definition = forms.ModelChoiceField(
-        queryset=ReportDefinition.objects.all(),
+        queryset=ReportDefinition.objects.none(),   # filled in __init__
         label="Report Template",
-        widget=forms.Select(),
-        # widget=admin.widgets.AutocompleteSelect(
-        #     ReportRun._meta.get_field("report_definition"), admin.site
-        # ),
     )
 
     def __init__(self, *args, **kwargs):
         model = kwargs.pop("model", None)
         super().__init__(*args, **kwargs)
 
-        # Filter ReportDefinitions allowed for this model.
-        self.fields["report_definition"].queryset = (
-            ReportDefinition.filter_for_allowed_models(model)
-        )
+        # Filter down to ReportDefinitions allowed for this model.
+        field = self.fields["report_definition"]
+        field.queryset = ReportDefinition.filter_for_allowed_models(model)
+
+        # HACK:
+        # AutocompleteSelect needs a ForeignKey instance to discover the
+        # autocomplete endpoint.  We just hijack the FK that already
+        # exists on ReportRun.
+        fk = ReportRun._meta.get_field("report_definition")
+        widget = admin.widgets.AutocompleteSelect(fk, admin.site)
+        widget.choices = field.choices
+        field.widget = widget
 
 
 # This form will be built dynamically based on the ReportDefinition.

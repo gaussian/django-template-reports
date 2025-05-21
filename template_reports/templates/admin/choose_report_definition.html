@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
 {% block content %}
+  {{ form.media }}            {# loads select2 / autocomplete assets #}
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
