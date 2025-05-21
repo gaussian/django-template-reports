@@ -17,6 +17,7 @@ from template_reports.office_renderer import (
 from template_reports.templating import process_text
 
 from .utils import get_storage
+from template_reports.signals import report_generated
 
 
 class BaseReportDefinition(models.Model):
@@ -138,10 +139,18 @@ class BaseReportDefinition(models.Model):
 
         # Save the generated report
         ReportRun = swapper.load_model("template_reports", "ReportRun")
-        ReportRun.objects.create(
+        report_run = ReportRun.objects.create(
             report_definition=self,
             file=output_content,
             **metadata,
+        )
+
+        # Send signal after report is generated
+        report_generated.send(
+            sender=self.__class__,
+            report_run=report_run,
+            context=context,
+            perm_user=perm_user,
         )
 
         # Success
