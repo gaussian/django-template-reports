@@ -18,8 +18,9 @@ class ChooseReportDefinitionForm(forms.Form):
     instead of a giant <select>.  We reuse the FK on ReportRun so we
     don't have to invent a dummy model just for the widget.
     """
+
     report_definition = forms.ModelChoiceField(
-        queryset=ReportDefinition.objects.none(),   # filled in __init__
+        queryset=ReportDefinition.objects.none(),  # filled in __init__
         label="Report Template",
     )
 
@@ -145,7 +146,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
             self.message_user(
                 request, "No report template selected.", level=messages.ERROR
             )
-            return redirect("..")
+            return self.redirect_back_to_changelist(request)
 
         # Build filter parameters for the queryset: use all GET parameters except report_def.
         filter_params = request.GET.copy()
@@ -171,7 +172,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                 f"The report template does not have any top-level object fields, it needs exactly one.",
                 level=messages.ERROR,
             )
-            return redirect("..")
+            return self.redirect_back_to_changelist(request)
         if len(object_fields_required) > 1:
             self.message_user(
                 request,
@@ -179,7 +180,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                 f"placeholders, but we found `{object_fields_required}`.",
                 level=messages.ERROR,
             )
-            return redirect("..")
+            return self.redirect_back_to_changelist(request)
         object_key_required = object_fields_required[0]
 
         # Get defaults for the extra simple fields from the report definition.
@@ -189,7 +190,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
             fixed_field=object_key_required,
             extra_simple_fields=simple_fields_required,
             fixed_queryset=qs,
-            initial=simple_field_defaults
+            initial=simple_field_defaults,
         )
 
         if request.method == "POST":
@@ -233,16 +234,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
                             runs_changelist_url,
                         ),
                     )
-                # Redirect (preserve original query parameters except report_def)
-                changelist_url = reverse(
-                    "admin:%s_%s_changelist"
-                    % (self.model._meta.app_label, self.model._meta.model_name)
-                )
-                query_params = request.GET.copy()
-                query_params.pop("report_def", None)
-                if query_params:
-                    changelist_url = f"{changelist_url}?{urlencode(query_params)}"
-                return redirect(changelist_url)
+                return self.redirect_back_to_changelist(request)
         else:
             form = ConfigureReportContextForm(**form_kwargs)
         context = {
@@ -250,3 +242,18 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
             "title": "Configure Report Context",
         }
         return render(request, "admin/configure_report_context.html", context)
+
+    def redirect_back_to_changelist(self, request):
+        """
+        Redirect back to the changelist view.
+        """
+        # Redirect (preserve original query parameters except report_def)
+        changelist_url = reverse(
+            "admin:%s_%s_changelist"
+            % (self.model._meta.app_label, self.model._meta.model_name)
+        )
+        query_params = request.GET.copy()
+        query_params.pop("report_def", None)
+        if query_params:
+            changelist_url = f"{changelist_url}?{urlencode(query_params)}"
+        return redirect(changelist_url)
