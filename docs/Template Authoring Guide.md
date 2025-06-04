@@ -196,6 +196,7 @@ See the separate [Looping in PowerPoint Templates.md](./Looping%20in%20PowerPoin
 | Date Format    | `{{ now | MMMM dd, YYYY }}`         | June 01, 2024                  |
 | Number Format  | `{{ total | .2f }}`                 | 123.45                         |
 | Uppercase      | `{{ title | upper }}`               | REPORT TITLE                   |
+| Length         | `{{ title | length }}`              | 12                             |
 | Math           | `{{ price * 1.2 }}`                 | 240.00                         |
 | Filter         | `{{ items[type="A"].count }}`       | [count1, count2, …]            |
 | Loop (PPTX)    | `%loop user in users%`              | Repeats slides with user data  |
