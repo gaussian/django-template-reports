@@ -61,7 +61,7 @@ jobs:
           # Mapping of files to their version regex patterns.
           # For pyproject.toml the version line is e.g.:
           #    version = "1.2.3" or version = "1.2.3"
-          # For permissible/__init__.py it is:
+          # For template_reports/__init__.py it is:
           #    __version__ = "1.2.3"
           files_to_update = {
               'pyproject.toml': r'(version\s*=\s*")(\d+\.\d+\.\d+)(")',
@@ -166,7 +166,7 @@ jobs:
     
     environment:
       name: pypi
-      url: https://pypi.org/p/permissible
+      url: https://pypi.org/p/django-template-reports
     
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
