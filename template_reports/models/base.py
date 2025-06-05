@@ -15,6 +15,7 @@ from template_reports.office_renderer import (
     extract_context_keys,
     identify_file_type,
 )
+from template_reports.office_renderer.render import render_from_file_stream
 from template_reports.templating import process_text
 
 from .utils import get_storage
@@ -86,40 +87,12 @@ class BaseReportDefinition(models.Model):
             **context,
         }
 
-        # Get the file as a usable stream
-        file_stream = self.get_file_stream()
-
-        # Prepare an output stream to save to
-        output = BytesIO()
-
-        # Get the file type
-        file_type = identify_file_type(file_stream)
-
-        # Build permission check function
-        def check_permissions(obj):
-            return perm_user.has_perm("view", obj)
-
-        # Render if PPTX
-        if file_type == "pptx":
-            _, errors = render_pptx(
-                template=file_stream,
-                context=context,
-                output=output,
-                check_permissions=check_permissions,
-            )
-
-        # Render if XLSX
-        elif file_type == "xlsx":
-            _, errors = render_xlsx(
-                template=file_stream,
-                context=context,
-                output=output,
-                check_permissions=check_permissions,
-            )
-
-        # Shouldn't happen, but just in case
-        else:
-            assert False, f"Unsupported file type: {file_type}"
+        # Render the template file, from the template (turned into a file stream)
+        output, errors, file_type = render_from_file_stream(
+            template_file_stream=self.get_file_stream(),
+            context=context,
+            check_permissions=lambda obj: perm_user.has_perm("view", obj),
+        )
 
         # Errors
         if errors:
