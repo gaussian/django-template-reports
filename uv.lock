@@ -27,24 +27,24 @@ wheels = [
 
 [[package]]
 name = "django-template-reports"
-version = "0.2.7"
+version = "0.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "django" },
-    { name = "python-pptx" },
+    { name = "office-templates" },
     { name = "swapper" },
 ]
 
 [package.optional-dependencies]
 xlsx = [
-    { name = "openpyxl" },
+    { name = "office-templates", extra = ["xlsx"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5,<6" },
-    { name = "openpyxl", marker = "extra == 'xlsx'", specifier = ">=3,<4" },
-    { name = "python-pptx", specifier = ">=1,<2" },
+    { name = "office-templates", specifier = ">=0.5" },
+    { name = "office-templates", extras = ["xlsx"], marker = "extra == 'xlsx'" },
     { name = "swapper", specifier = ">=1,<2" },
 ]
 provides-extras = ["xlsx"]
@@ -98,6 +98,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/cd/95fa2201041a610c4d08ddaf31d43b98ecc4b1d74b1e7245b1abdab443cb/lxml-5.4.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:15a665ad90054a3d4f397bc40f73948d48e36e4c09f9bcffc7d90c87410e478a", size = 5021569, upload-time = "2025-04-23T01:47:33.805Z" },
     { url = "https://files.pythonhosted.org/packages/2d/a6/31da006fead660b9512d08d23d31e93ad3477dd47cc42e3285f143443176/lxml-5.4.0-cp313-cp313-win32.whl", hash = "sha256:d5663bc1b471c79f5c833cffbc9b87d7bf13f87e055a5c86c363ccd2348d7e82", size = 3485270, upload-time = "2025-04-23T01:47:36.133Z" },
     { url = "https://files.pythonhosted.org/packages/fc/14/c115516c62a7d2499781d2d3d7215218c0731b2c940753bf9f9b7b73924d/lxml-5.4.0-cp313-cp313-win_amd64.whl", hash = "sha256:bcb7a1096b4b6b24ce1ac24d4942ad98f983cd3810f9711bcd0293f43a9d8b9f", size = 3814606, upload-time = "2025-04-23T01:47:39.028Z" },
+]
+
+[[package]]
+name = "office-templates"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-pptx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/74/1a912684551c7da468ebbbf2067dfb897130d6f6015d25b73ba37ff3fc92/office_templates-0.5.0.tar.gz", hash = "sha256:8be6144ecfc79e32b3663c4675257fd052ebc33d3608154182ff7d661fc015c7", size = 61421, upload-time = "2025-06-05T04:01:37.322Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/e4/c5741c2e9cee1deabcffa01ad5db59b1c08802e78ae1099c848118c33c0d/office_templates-0.5.0-py3-none-any.whl", hash = "sha256:7ad0bc0a00d1c3e9a7ceb0940a2587a824f0455547079f7d2ed6ecf2a63f505d", size = 40590, upload-time = "2025-06-05T04:01:35.826Z" },
+]
+
+[package.optional-dependencies]
+xlsx = [
+    { name = "openpyxl" },
 ]
 
 [[package]]

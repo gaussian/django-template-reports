@@ -7,19 +7,12 @@ from django.contrib.auth.models import PermissionsMixin
 from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models import Q
+from office_templates import extract_context_keys, render_from_file_stream, process_text
 import swapper
 
-from template_reports.office_renderer import (
-    render_pptx,
-    render_xlsx,
-    extract_context_keys,
-    identify_file_type,
-)
-from template_reports.office_renderer.render import render_from_file_stream
-from template_reports.templating import process_text
+from template_reports.signals import report_generated
 
 from .utils import get_storage
-from template_reports.signals import report_generated
 
 
 class BaseReportDefinition(models.Model):

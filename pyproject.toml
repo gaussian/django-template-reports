@@ -14,12 +14,12 @@ requires-python = ">=3.12"
 dependencies = [
   "Django>=5,<6",
   "swapper>=1,<2",
-  "python-pptx>=1,<2",
+  "office-templates>=0.5",
 ]
 
 [project.optional-dependencies]
 xlsx = [
-  "openpyxl>=3,<4",
+  "office-templates[xlsx]",
 ]
 
 [project.urls]

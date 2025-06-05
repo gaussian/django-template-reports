@@ -1,9 +1,8 @@
 import random
-import sys
 import argparse
 import datetime
 
-from template_reports.office_renderer import render_pptx
+from office_templates import render_pptx
 
 
 # Dummy context objects for testing.
