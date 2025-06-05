@@ -137,7 +137,7 @@ def main():
         input_file,
         context,
         output_file,
-        perm_user=None,
+        check_permissions=None,
     )
     if rendered:
         print("Rendered PPTX saved to:", rendered)

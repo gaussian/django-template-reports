@@ -3,6 +3,7 @@ from io import BytesIO
 import re
 from typing import Any
 
+from django.contrib.auth.models import PermissionsMixin
 from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models import Q
@@ -69,7 +70,7 @@ class BaseReportDefinition(models.Model):
         file_stream = self.get_file_stream()
         return extract_context_keys(file_stream)
 
-    def run_report(self, context, perm_user):
+    def run_report(self, context: dict, perm_user: PermissionsMixin):
         """
         Run the report with the provided context.
         Save the generated report file as ReportRun.
@@ -91,13 +92,17 @@ class BaseReportDefinition(models.Model):
         # Get the file type
         file_type = identify_file_type(file_stream)
 
+        # Build permission check function
+        def check_permissions(obj):
+            return perm_user.has_perm("view", obj)
+
         # Render if PPTX
         if file_type == "pptx":
             _, errors = render_pptx(
                 template=file_stream,
                 context=context,
                 output=output,
-                perm_user=perm_user,
+                check_permissions=check_permissions,
             )
 
         # Render if XLSX
@@ -106,7 +111,7 @@ class BaseReportDefinition(models.Model):
                 template=file_stream,
                 context=context,
                 output=output,
-                perm_user=perm_user,
+                check_permissions=check_permissions,
             )
 
         # Shouldn't happen, but just in case
@@ -169,7 +174,7 @@ class BaseReportDefinition(models.Model):
     def build_filename(
         self,
         context: dict,
-        perm_user,
+        perm_user: PermissionsMixin,
         file_type: str,
     ) -> str:
         """
@@ -196,7 +201,7 @@ class BaseReportDefinition(models.Model):
                 process_text(
                     text=filename_template,
                     context=context,
-                    perm_user=perm_user,
+                    check_permissions=lambda obj: perm_user.has_perm("view", obj),
                 )
             )
 
@@ -243,7 +248,11 @@ class BaseReportDefinition(models.Model):
         # Otherwise, return the string representation of the value.
         return str(value)
 
-    def get_extra_creation_kwargs(self, context: dict, perm_user) -> dict[str, Any]:
+    def get_extra_creation_kwargs(
+        self,
+        context: dict,
+        perm_user: PermissionsMixin,
+    ) -> dict[str, Any]:
         """
         Return the extra kwargs for a report run with the given context and user.
         Override this method to add more data or metadata.
@@ -268,7 +277,8 @@ class BaseReportRun(models.Model):
 
     # The generated PPTX file
     file = models.FileField(
-        upload_to="template_reports/generated_reports/", storage=get_storage
+        upload_to="template_reports/generated_reports/",
+        storage=get_storage,
     )
 
     created = models.DateTimeField(auto_now_add=True)
