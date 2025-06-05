@@ -25,7 +25,10 @@ class BaseReportDefinition(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
-    file = models.FileField(upload_to="template_reports/templates/", storage=get_storage)
+    file = models.FileField(
+        upload_to="template_reports/templates/",
+        storage=get_storage,
+    )
 
     config = models.JSONField(
         default=dict, blank=True, help_text="Configuration JSON, including allowed models"
