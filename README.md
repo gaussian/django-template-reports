@@ -10,7 +10,7 @@ Django Template Reports is a Django application that turns PowerPoint (PPTX) and
 * **Arithmetic operators** in expressions (``+``, ``-``, ``*``, ``/``).
 * **Dynamic table and worksheet expansion** when a placeholder resolves to a list.
 * **Chart support** where spreadsheet values inside charts contain placeholders.
-* **Permission enforcement** – data is filtered based on ``perm_user``.
+* **Permission enforcement** – data is filtered based on ``check_permissions`` function.
 * **Admin integration** with a flow to choose a template, configure context and generate ``ReportRun`` records.  Generated files can be downloaded individually or as a ZIP archive.
 * **Configurable filenames** using ``config.filename_template`` in ``ReportDefinition``.
 * **Global context** injection for values that should always be available.
