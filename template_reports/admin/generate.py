@@ -69,7 +69,9 @@ class ConfigureReportContextForm(forms.Form):
 
         # For each additional field, add a text input.
         for field in extra_simple_fields:
-            self.fields[field] = forms.CharField(label=field.capitalize(), required=False)
+            self.fields[field] = forms.CharField(
+                label=field.capitalize(), required=False
+            )
 
 
 class ReportGenerationAdminMixin(admin.ModelAdmin):
@@ -169,7 +171,7 @@ class ReportGenerationAdminMixin(admin.ModelAdmin):
         if not object_fields_required:
             self.message_user(
                 request,
-                f"The report template does not have any top-level object fields, it needs exactly one.",
+                "The report template does not have any top-level object fields, it needs exactly one.",
                 level=messages.ERROR,
             )
             return self.redirect_back_to_changelist(request)
