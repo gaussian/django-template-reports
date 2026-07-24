@@ -23,9 +23,9 @@ jobs:
           cache-dependency-glob: uv.lock
           python-version: '3.12'
       - name: Ruff lint
-        run: uv run --all-extras ruff check template_reports/ tests/
+        run: uv run --all-extras ruff check template_reports/
       - name: Ruff format check
-        run: uv run --all-extras ruff format --check template_reports/ tests/
+        run: uv run --all-extras ruff format --check template_reports/
 
   test:
     name: test
@@ -47,7 +47,7 @@ jobs:
       # still fail the job. Once tests are re-added, this tolerates them too.
       - name: Run tests
         run: |
-          uv run --all-extras pytest; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
+          uv run --all-extras pytest || [ $? -eq 5 ]
 
   # Aggregate gate — the ONLY check the branch ruleset requires. Passes only if
   # every needed job succeeded. `if: always()` is required so a failed/skipped
