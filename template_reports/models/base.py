@@ -25,7 +25,9 @@ class BaseReportDefinition(models.Model):
     )
 
     config = models.JSONField(
-        default=dict, blank=True, help_text="Configuration JSON, including allowed models"
+        default=dict,
+        blank=True,
+        help_text="Configuration JSON, including allowed models",
     )
 
     created = models.DateTimeField(auto_now_add=True)
