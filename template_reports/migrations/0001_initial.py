@@ -7,40 +7,83 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        migrations.swappable_dependency(settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL),
+        migrations.swappable_dependency(
+            settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL
+        ),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ReportDefinition',
+            name="ReportDefinition",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('file', models.FileField(storage=template_reports.models.utils.get_storage, upload_to='template_reports/templates/')),
-                ('config', models.JSONField(blank=True, default=dict, help_text='Configuration JSON, including allowed models')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "file",
+                    models.FileField(
+                        storage=template_reports.models.utils.get_storage,
+                        upload_to="template_reports/templates/",
+                    ),
+                ),
+                (
+                    "config",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Configuration JSON, including allowed models",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'swappable': 'TEMPLATE_REPORTS_REPORTDEFINITION_MODEL',
+                "swappable": "TEMPLATE_REPORTS_REPORTDEFINITION_MODEL",
             },
         ),
         migrations.CreateModel(
-            name='ReportRun',
+            name="ReportRun",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('data', models.JSONField()),
-                ('file', models.FileField(storage=template_reports.models.utils.get_storage, upload_to='template_reports/generated_reports/')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('report_definition', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("data", models.JSONField()),
+                (
+                    "file",
+                    models.FileField(
+                        storage=template_reports.models.utils.get_storage,
+                        upload_to="template_reports/generated_reports/",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                (
+                    "report_definition",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.TEMPLATE_REPORTS_REPORTDEFINITION_MODEL,
+                    ),
+                ),
             ],
             options={
-                'swappable': 'TEMPLATE_REPORTS_REPORTRUN_MODEL',
+                "swappable": "TEMPLATE_REPORTS_REPORTRUN_MODEL",
             },
         ),
     ]
