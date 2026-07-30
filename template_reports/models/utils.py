@@ -7,5 +7,6 @@ def get_storage():
     if storage_key:
         return storages[storage_key]
 
-    # Use default storage
-    return None
+    # Use default storage. (FileField rejects a storage callable returning
+    # None, so the fallback must resolve the alias explicitly.)
+    return storages["default"]
