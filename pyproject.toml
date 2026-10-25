@@ -56,3 +56,9 @@ ignore = ["F401", "F841"]
 [tool.ruff.lint.per-file-ignores]
 # __init__.py uses star imports to re-export the public API.
 "__init__.py" = ["F403"]
+
+[tool.uv]
+# Dependency cooldown: never resolve a release under 7 days old.
+exclude-newer = "7 days"
+# Our own packages are exempt from the cooldown.
+exclude-newer-package = { office-templates = false }

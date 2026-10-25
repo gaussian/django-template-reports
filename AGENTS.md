@@ -17,6 +17,7 @@ integration layer (models, admin, signals) on top of it.
 - Lint + format: `uv run --all-extras ruff check template_reports/ tests/` and
   `ruff format --check template_reports/ tests/`
 - Default working branch: `develop`. Releases flow `develop` → `main`.
+- Dependency cooldown: `exclude-newer = "7 days"` under `[tool.uv]` in `pyproject.toml` means uv never resolves a release under 7 days old (`office-templates` is exempt). For an urgent fix, add `<pkg> = false` under `exclude-newer-package`, run `uv lock --upgrade-package <pkg>`, and remove the exemption once the release is over 7 days old.
 
 ## Opening PRs & versioning
 
