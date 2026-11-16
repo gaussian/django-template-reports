@@ -9,13 +9,16 @@ integration layer (models, admin, signals) on top of it.
 ## Repo shape
 
 - Source: `template_reports/`
-- Tests: `tests/` (pytest-django) — `uv run --all-extras pytest`. **Note:** this
-  repo currently has no test suite — the template-rendering tests moved to
-  `office-templates` when its logic did (see commit `05453c3`). The `test` CI
-  job tolerates zero collected tests (pytest exit code 5) so it doesn't block
-  on this pre-existing gap; a real regression still fails the job.
-- Lint + format: `uv run --all-extras ruff check template_reports/ tests/` and
-  `ruff format --check template_reports/ tests/`
+- Tests (pytest-django): `uv run --all-extras pytest`. **Note:** this repo
+  currently has no test suite and no `tests/` directory — the template-rendering
+  tests moved to `office-templates` when its logic did (see commit `05453c3`).
+  pytest exits 5 ("no tests collected"); the `test` CI job tolerates that exit
+  code so it doesn't block on this pre-existing gap, while a real regression
+  still fails the job.
+- Lint + format (as in `.github/workflows/checks.yml`):
+  `uv run --all-extras ruff check template_reports/` and
+  `uv run --all-extras ruff format --check template_reports/`
+- Type-check: none — the repo has no type checker configured and CI runs none.
 - Default working branch: `develop`. Releases flow `develop` → `main`.
 - Dependency cooldown: `exclude-newer = "7 days"` under `[tool.uv]` in `pyproject.toml` means uv never resolves a release under 7 days old (`office-templates` is exempt). For an urgent fix, add `<pkg> = false` under `exclude-newer-package`, run `uv lock --upgrade-package <pkg>`, and remove the exemption once the release is over 7 days old.
 
@@ -27,5 +30,6 @@ and `uv.lock` and is **not** bumped automatically on merge — it must be bumped
 deliberately, or no release is cut. Publishing to PyPI is automatic once a
 `develop` → `main` PR merges.
 
-**Follow the `create-merge-pr` skill** (`.agents/skills/create-merge-pr/`) for the
-full PR workflow, including when and how to bump the version.
+**Follow the `create-merge-pr` skill** (the machine-wide skill, installed by
+lobster into `~/.agents/skills/create-merge-pr/`) for the full PR workflow,
+including when and how to bump the version.
